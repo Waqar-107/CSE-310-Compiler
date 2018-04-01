@@ -1,3 +1,3 @@
 # CSE-310-Compiler
 
-<p><b>1.Implementation of three classes: SymbolInfo, ScopeTable and SymbolTable</b></p>
+<h3>1. Implementation of three classes: SymbolInfo, ScopeTable and SymbolTable</h3>

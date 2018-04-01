@@ -1,5 +1,5 @@
 /*************1505107**************/
-/**ScopeInfo, ScopeTable, SymbolTable**/
+/**SymbolInfo, ScopeTable, SymbolTable**/
 
 #include<cstdio>
 #include<iostream>

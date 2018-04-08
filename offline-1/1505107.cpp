@@ -73,8 +73,11 @@ class ScopeTable
 	SymbolInfo *head;
 	ScopeTable *parentScope;
 public:
-	ScopeTable() {
-		parentScope = 0; t2 = 3;
+	ScopeTable()
+	{
+		parentScope = 0;
+		bucket = 0; head = 0;
+		t2 = 3;
 	}
 
 	ScopeTable(int n, int id)
@@ -119,7 +122,6 @@ public:
 		}
 
 		SymbolInfo *newSymbol = new SymbolInfo(name, type);
-
 		int hash = Hash(name);
 
 		if (bucket[hash])
@@ -141,18 +143,20 @@ public:
 		int hash = Hash(name);
 		SymbolInfo *temp = bucket[hash];
 
-		pos = 0; bkt = hash;
+		pos = 0;
+		bkt = hash;
 		while (temp)
 		{
 			if (temp->getName() == name)
 			{
 				if (t2 != 1)
-					printf("Found in ScopeTable# %d at position %d, %d\n", id, bkt,pos);
+					printf("Found in ScopeTable# %d at position %d, %d\n", id, bkt, pos);
 
 				return temp;
 			}
 
-			temp = temp->getNext(); pos++;
+			temp = temp->getNext();
+			pos++;
 		}
 
 		if (t2 != 1)
@@ -190,7 +194,7 @@ public:
 			bucket[hash] = post;
 		}
 
-		printf("Deleted entry at %d, %d from current ScopeTable\n", bkt,pos);
+		printf("Deleted entry at %d, %d from current ScopeTable\n", bkt, pos);
 
 		delete del;
 		return true;
@@ -244,7 +248,6 @@ public:
 
 		delete x;
 	}
-
 };
 
 class SymbolTable
@@ -254,9 +257,11 @@ class SymbolTable
 	vector<ScopeTable*> v;
 
 public:
-	SymbolTable(int n) {
+	SymbolTable(int n)
+	{
 		this->n = n;
 		id = 0;
+		current = 0;
 	}
 
 	void EnterScope()
@@ -277,7 +282,8 @@ public:
 		if (!id)
 			printf("No ScopeTable To Remove\n");
 
-		printf("ScopeTable With Id %d Removed\n", id); id--;
+		printf("ScopeTable With Id %d Removed\n", id);
+		id--;
 		current = v.back()->getParentScopeTable();
 		v.pop_back();
 	}
@@ -343,7 +349,7 @@ public:
 int main()
 {
 	freopen("input.txt", "r", stdin);
-	freopen("output.txt","w",stdout);
+	freopen("output.txt", "w", stdout);
 
 	int i, j, k;
 	int n, m;

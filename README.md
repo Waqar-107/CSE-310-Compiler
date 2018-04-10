@@ -5,7 +5,7 @@
 ```
 lex scanner.l
 gcc lex.yy.c -lfl
-./a.out
+./a.out "file_name,if any"
 
 ```
 

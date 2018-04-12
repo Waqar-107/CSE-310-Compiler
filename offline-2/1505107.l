@@ -38,11 +38,93 @@ WHILE "while"
 VOID "void"
 /* ----------------------------------------------- */
 
+/* ----------------------------------------------- */
+/* operators and punctuators */
+ADDOP [+-]
+MULOP [*/%]
+INCOP ["++" | "--"]
+RELOP ["<" | "<=" | ">" | ">=" | "==" | "!=" ]
+ASSIGNOP [=]
+LOGICOP ["&&" | "||"]
+NOT [!]
+LPAREN [(]
+RPAREN [)]
+LCURL [{]
+RCURL [}]
+LTHIRD ["["]
+RTHIRD ["]"]
+COMMA [,]
+SEMICOLON [;]
+/* ----------------------------------------------- */
+
 /* rules section */
 %%
 
 {BREAK} {
+	fprintf(f_log,"<BREAK>");
 }
+
+{CASE}{
+	fprintf(f_log,"<CASE>");
+}
+
+{CHAR}{
+	fprintf(f_log,"<CHAR>");
+}
+
+{CONTINUE}{
+	fprintf(f_log,"<CONTINUE>");
+}
+
+{DEFAULT}{
+	fprintf(f_log,"<DEFAULT>");
+}
+
+{DO}{
+	fprintf(f_log,"<DO>");
+}
+
+{DOUBLE}{
+	fprintf(f_log,"<DOUBLE>");
+}
+
+{ELSE}{
+	fprintf(f_log,"<ELSE>");
+}
+
+{FLOAT}{
+	fprintf(f_log,"<FLOAT>");
+}
+
+{FOR}{
+	fprintf(f_log,"<FOR>");
+}
+
+{IF}{
+	fprintf(f_log,"<IF>");
+}
+
+{INT}{
+	fprintf(f_log,"<INT>");
+}
+
+{RETURN}{
+	fprintf(f_log,"<RETURN>");
+}
+
+{SWITCH}{
+	fprintf(f_log,"<SWITCH>");
+}
+
+{WHILE}{
+	fprintf(f_log,"<WHILE>");
+}
+
+{VOID}{
+	fprintf(f_log,"<VOID>");
+}
+
+
 
 %%
 
@@ -69,7 +151,8 @@ int main(int argc,char **argv[])
 	yylex();
 
 	fclose(yyin);
-	//close the files which were opened for writing
+	fclose(f_log);
+	fclose(token);
 
 	return 0;
 }

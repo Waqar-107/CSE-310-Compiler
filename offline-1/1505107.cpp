@@ -321,7 +321,7 @@ public:
 			return false;
 	}
 
-	bool lookUp(string name)
+	SymbolInfo* lookUp(string name)
 	{
 		ScopeTable *temp = current;
 
@@ -329,12 +329,12 @@ public:
 		{
 			temp->SetT2();
 			if (temp->lookUp(name))
-				return true;
+				return temp->lookUp(name);
 
 			temp = temp->getParentScopeTable();
 		}
 
-		return false;
+		return 0;
 	}
 
 	void PrintCurrentScopeTable() {

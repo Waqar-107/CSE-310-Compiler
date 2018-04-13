@@ -1,4 +1,5 @@
 int main(){
+	//this is a single line comment
 	int x,y;
 	char c;
 	char d[10]="abcd";

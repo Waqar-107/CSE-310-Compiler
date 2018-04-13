@@ -2,21 +2,29 @@
 /* definition section */
 %{
 
-#include<cstdio>
-#include<cstdlib>
+#include<stdio.h>
+#include<stdlib.h>
 
 
 FILE *f_log;
 FILE *token;
+
+int line=1;
 
 %}
 
 
 DIGIT [0-9]
 LETTER [a-zA-Z]
-NEWLINE \n
+NEWLINE "\n"
 WHITESPACE [ \t\r\v\f]+
 WORD [a-zA-Z]+
+
+/* a single line starts with 'double slash' and ends with a newline. 
+   in the middle, there can be literaly anything.
+*/
+SINGLE_LINE_COMMENT "//"[^"\n"]*
+MULTI_LINE_COMMENT "/*"[^"\0"]"*/"
 
 /* ----------------------------------------------- */
 /* keywords */
@@ -42,89 +50,192 @@ VOID "void"
 /* operators and punctuators */
 ADDOP [+-]
 MULOP [*/%]
-INCOP ["++" | "--"]
-RELOP ["<" | "<=" | ">" | ">=" | "==" | "!=" ]
-ASSIGNOP [=]
-LOGICOP ["&&" | "||"]
-NOT [!]
-LPAREN [(]
-RPAREN [)]
-LCURL [{]
-RCURL [}]
-LTHIRD ["["]
-RTHIRD ["]"]
-COMMA [,]
-SEMICOLON [;]
+INCOP ("++" | "--")
+RELOP (">"|">="|"<"|"<="|"=="|"!=")
+ASSIGNOP ("=")
+LOGICOP ("&&" | "||")
+NOT ("!")
+LPAREN ("(")
+RPAREN (")")
+LCURL ("{")
+RCURL ("}")
+LTHIRD ("[")
+RTHIRD ("]")
+COMMA (",")
+SEMICOLON (";")
 /* ----------------------------------------------- */
+
+
 
 /* rules section */
 %%
 
+{NEWLINE} {
+	line++;
+}
+
+{SINGLE_LINE_COMMENT} {
+	fprintf(f_log,"Line no. %d: TOKEN <SINGLE_LINE_COMMENT> Lexeme ' %s ' found\n",line,yytext);
+}
+
+MULTI_LINE_COMMENT {
+	fprintf(f_log,"TOKEN <MULTI_LINE_COMMENT> Lexeme ' %s ' found\n",yytext);
+}
+
 {BREAK} {
-	fprintf(f_log,"<BREAK>");
+	fprintf(token,"<BREAK>");
+	fprintf(f_log,"Line no. %d: TOKEN <BREAK> Lexeme %s found\n",line,yytext);
 }
 
-{CASE}{
-	fprintf(f_log,"<CASE>");
+{CASE} {
+	fprintf(token,"<CASE>");
+	fprintf(f_log,"Line no. %d: TOKEN <CASE> Lexeme %s found\n",line,yytext);
 }
 
-{CHAR}{
-	fprintf(f_log,"<CHAR>");
+{CHAR} {
+	fprintf(token,"<CHAR>");
+	fprintf(f_log,"Line no. %d: TOKEN <CHAR> Lexeme %s found\n",line,yytext);
 }
 
-{CONTINUE}{
-	fprintf(f_log,"<CONTINUE>");
+{CONTINUE} {
+	fprintf(token,"<CONTINUE>");
+	fprintf(f_log,"Line no. %d: TOKEN <CONTINUE> Lexeme %s found\n",line,yytext);
 }
 
-{DEFAULT}{
-	fprintf(f_log,"<DEFAULT>");
+{DEFAULT} {
+	fprintf(token,"<DEFAULT>");
+	fprintf(f_log,"Line no. %d: TOKEN <DEFAULT> Lexeme %s found\n",line,yytext);
 }
 
-{DO}{
-	fprintf(f_log,"<DO>");
+{DO} {
+	fprintf(token,"<DO>");
+	fprintf(f_log,"Line no. %d: TOKEN <DO> Lexeme %s found\n",line,yytext);
 }
 
-{DOUBLE}{
-	fprintf(f_log,"<DOUBLE>");
+{DOUBLE} {
+	fprintf(token,"<DOUBLE>");
+	fprintf(f_log,"Line no. %d: TOKEN <DOUBLE> Lexeme %s found\n",line,yytext);
 }
 
-{ELSE}{
-	fprintf(f_log,"<ELSE>");
+{ELSE} {
+	fprintf(token,"<ELSE>");
+	fprintf(f_log,"Line no. %d: TOKEN <ELSE> Lexeme %s found\n",line,yytext);
 }
 
-{FLOAT}{
-	fprintf(f_log,"<FLOAT>");
+{FLOAT} {
+	fprintf(token,"<FLOAT>");
+	fprintf(f_log,"Line no. %d: TOKEN <FLOAT> Lexeme %s found\n",line,yytext);
 }
 
-{FOR}{
-	fprintf(f_log,"<FOR>");
+{FOR} {
+	fprintf(token,"<FOR>");
+	fprintf(f_log,"Line no. %d: TOKEN <FOR> Lexeme %s found\n",line,yytext);
 }
 
-{IF}{
-	fprintf(f_log,"<IF>");
+{IF} {
+	fprintf(token,"<IF>");
+	fprintf(f_log,"Line no. %d: TOKEN <IF> Lexeme %s found\n",line,yytext);
 }
 
-{INT}{
-	fprintf(f_log,"<INT>");
+{INT} {
+	fprintf(token,"<INT>");
+	fprintf(f_log,"Line no. %d: TOKEN <INT> Lexeme %s found\n",line,yytext);
 }
 
-{RETURN}{
-	fprintf(f_log,"<RETURN>");
+{RETURN} {
+	fprintf(token,"<RETURN>");
+	fprintf(f_log,"Line no. %d: TOKEN <RETURN> Lexeme %s found\n",line,yytext);
 }
 
-{SWITCH}{
-	fprintf(f_log,"<SWITCH>");
+{SWITCH} {
+	fprintf(token,"<SWITCH>");
+	fprintf(f_log,"Line no. %d: TOKEN <SWITCH> Lexeme %s found\n",line,yytext);
 }
 
-{WHILE}{
-	fprintf(f_log,"<WHILE>");
+{WHILE} {
+	fprintf(token,"<WHILE>");
+	fprintf(f_log,"Line no. %d: TOKEN <WHILE> Lexeme %s found\n",line,yytext);
 }
 
-{VOID}{
-	fprintf(f_log,"<VOID>");
+{VOID} {
+	fprintf(token,"<VOID>");
+	fprintf(f_log,"Line no. %d: TOKEN <VOID> Lexeme %s found\n",line,yytext);
 }
 
+{ADDOP} {
+	fprintf(token,"<ADDOP,%s>",yytext);
+	fprintf(f_log,"Line no. %d: TOKEN <ADDOP> Lexeme %s found\n",line,yytext);
+}
 
+{MULOP} {
+	fprintf(token,"<MULOP,%s>",yytext);
+	fprintf(f_log,"Line no. %d: TOKEN <MULOP> Lexeme %s found\n",line,yytext);
+}
+
+RELOP {
+	fprintf(token,"<RELOP,%s>",yytext);
+	fprintf(f_log,"Line no. %d: TOKEN <RELOP> Lexeme %s found\n",line,yytext);
+}
+
+INCOP {
+	fprintf(token,"<INCOP,%s>",yytext);
+	fprintf(f_log,"Line no. %d: TOKEN <INCOP> Lexeme %s found\n",line,yytext);
+}
+
+LOGICOP {
+	fprintf(token,"<LOGICOP,%s>",yytext);
+	fprintf(f_log,"Line no. %d: TOKEN <LOGICOP> Lexeme %s found\n",line,yytext);
+}
+
+{ASSIGNOP} {
+	fprintf(token,"<ASSIGNOP,%s>",yytext);
+	fprintf(f_log,"Line no. %d: TOKEN <ASSIGNOP> Lexeme %s found\n",line,yytext);
+}
+
+{NOT} {
+	fprintf(token,"<NOT,%s>",yytext);
+	fprintf(f_log,"Line no. %d: TOKEN <NOT> Lexeme %s found\n",line,yytext);
+}
+
+{LPAREN} {
+	fprintf(token,"<LPAREN,%s>",yytext);
+	fprintf(f_log,"Line no. %d: TOKEN <LPAREN> Lexeme %s found\n",line,yytext);
+}
+
+{RPAREN} {
+	fprintf(token,"<RPAREN,%s>",yytext);
+	fprintf(f_log,"Line no. %d: TOKEN <RPAREN> Lexeme %s found\n",line,yytext);
+}
+
+{LCURL} {
+	fprintf(token,"<LCURL,%s>",yytext);
+	fprintf(f_log,"Line no. %d: TOKEN <LCURL> Lexeme %s found\n",line,yytext);
+}
+
+{RCURL} {
+	fprintf(token,"<RCURL,%s>",yytext);
+	fprintf(f_log,"Line no. %d: TOKEN <RCURL> Lexeme %s found\n",line,yytext);
+}
+
+{LTHIRD} {
+	fprintf(token,"<LTHIRD,%s>",yytext);
+	fprintf(f_log,"Line no. %d: TOKEN <LTHIRD> Lexeme %s found\n",line,yytext);
+}
+
+{RTHIRD} {
+	fprintf(token,"<RTHIRD,%s>",yytext);
+	fprintf(f_log,"Line no. %d: TOKEN <RTHIRD> Lexeme %s found\n",line,yytext);
+}
+
+{COMMA} {
+	fprintf(token,"<COMMA,%s>",yytext);
+	fprintf(f_log,"Line no. %d: TOKEN <COMMA> Lexeme %s found\n",line,yytext);
+}
+
+{SEMICOLON} {
+	fprintf(token,"<SEMICOLON,%s>",yytext);
+	fprintf(f_log,"Line no. %d: TOKEN <SEMICOLON> Lexeme %s found\n",line,yytext);
+}
 
 %%
 

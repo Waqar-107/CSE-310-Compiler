@@ -1,0 +1,17 @@
+/* this input contains error, you program should
+detect the errors given here */
+
+1..2.3
+1E10.7.8E1
+'ab'
+'a
+'
+"abc
+"abc\
+def\
+ff
+
+xy
+
+/*adada
+dakdha

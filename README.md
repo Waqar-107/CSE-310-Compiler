@@ -9,4 +9,6 @@ gcc lex.yy.c -lfl
 
 ```
 
+<h3>**Note: use g++ instead of gcc if you have included c++ concepts :)<h3/>
+
 <h3>1. Implementation of three classes: SymbolInfo, ScopeTable and SymbolTable</h3>

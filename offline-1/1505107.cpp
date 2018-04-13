@@ -236,6 +236,8 @@ public:
 	{
 		for (int i = 0; i < n; i++)
 			fr(bucket[i]);
+
+        delete bucket;
 	}
 
 	void fr(SymbolInfo *x)
@@ -253,7 +255,7 @@ public:
 class SymbolTable
 {
 	int n, id;
-	ScopeTable *current;
+	ScopeTable *current, *dell;
 	vector<ScopeTable*> v;
 
 public:
@@ -280,12 +282,19 @@ public:
 	void ExitScope()
 	{
 		if (!id)
-			printf("No ScopeTable To Remove\n");
+        {
+            printf("No ScopeTable To Remove\n");
+            return;
+        }
 
 		printf("ScopeTable With Id %d Removed\n", id);
 		id--;
-		current = v.back()->getParentScopeTable();
+
+		dell=current;
+		current=current->getParentScopeTable();
 		v.pop_back();
+
+		delete dell;
 	}
 
 	bool Insert(string name, string type)
@@ -345,7 +354,6 @@ public:
 	}
 };
 
-
 int main()
 {
 	freopen("input.txt", "r", stdin);
@@ -402,6 +410,9 @@ int main()
 
 		else if (t == 'E')
 			cout << t << endl, sm.ExitScope();
+
+        else
+            break;
 
 		cout << endl;
 	}

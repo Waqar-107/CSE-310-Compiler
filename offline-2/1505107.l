@@ -20,11 +20,20 @@ NEWLINE "\n"
 WHITESPACE [ \t\r\v\f]+
 WORD [a-zA-Z]+
 
+
 /* a single line starts with 'double slash' and ends with a newline. 
-   in the middle, there can be literaly anything.
+*  in the middle, there can be literaly anything and any number of times.
 */
 SINGLE_LINE_COMMENT "//"[^"\n"]*
-MULTI_LINE_COMMENT "/*"[^"\0"]"*/"
+
+
+/* for a multiline comment, it must start with backslash-star and 
+*  ends with star-backslash 
+*  in the middle there can be anything except star-backslash
+*/
+STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH "*"[^/]
+ANYTHING_EXCEPT_STAR [^*]
+MULTILINE_COMMENT ("/*"({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH})*"*/")
 
 /* ----------------------------------------------- */
 /* keywords */
@@ -50,10 +59,10 @@ VOID "void"
 /* operators and punctuators */
 ADDOP [+-]
 MULOP [*/%]
-INCOP ("++" | "--")
+INCOP ("++"|"--")
 RELOP (">"|">="|"<"|"<="|"=="|"!=")
 ASSIGNOP ("=")
-LOGICOP ("&&" | "||")
+LOGICOP ("&&"|"||")
 NOT ("!")
 LPAREN ("(")
 RPAREN (")")
@@ -78,8 +87,8 @@ SEMICOLON (";")
 	fprintf(f_log,"Line no. %d: TOKEN <SINGLE_LINE_COMMENT> Lexeme ' %s ' found\n",line,yytext);
 }
 
-MULTI_LINE_COMMENT {
-	fprintf(f_log,"TOKEN <MULTI_LINE_COMMENT> Lexeme ' %s ' found\n",yytext);
+{MULTILINE_COMMENT} {
+	fprintf(f_log,"Line no. %d: TOKEN <MULTI_LINE_COMMENT> Lexeme ' %s ' found\n",line,yytext);
 }
 
 {BREAK} {
@@ -172,17 +181,17 @@ MULTI_LINE_COMMENT {
 	fprintf(f_log,"Line no. %d: TOKEN <MULOP> Lexeme %s found\n",line,yytext);
 }
 
-RELOP {
+{RELOP} {
 	fprintf(token,"<RELOP,%s>",yytext);
 	fprintf(f_log,"Line no. %d: TOKEN <RELOP> Lexeme %s found\n",line,yytext);
 }
 
-INCOP {
+{INCOP} {
 	fprintf(token,"<INCOP,%s>",yytext);
 	fprintf(f_log,"Line no. %d: TOKEN <INCOP> Lexeme %s found\n",line,yytext);
 }
 
-LOGICOP {
+{LOGICOP} {
 	fprintf(token,"<LOGICOP,%s>",yytext);
 	fprintf(f_log,"Line no. %d: TOKEN <LOGICOP> Lexeme %s found\n",line,yytext);
 }

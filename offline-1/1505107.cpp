@@ -338,7 +338,8 @@ public:
 	}
 
 	void PrintCurrentScopeTable() {
-		current->printScopeTable();
+		if(current)
+            current->printScopeTable();
 	}
 
 	void PrintAllScopeTable()

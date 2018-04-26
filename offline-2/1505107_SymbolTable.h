@@ -104,7 +104,7 @@ public:
 	{
 		if (lookUp(name) != 0)
 		{
-			fprintf(fout,"Already Exists In The Current ScopeTable\n");
+			fprintf(logout,"'%s' already Exists In The Current ScopeTable\n",name.c_str());
 			return  false;
 		}
 
@@ -175,8 +175,8 @@ public:
 
 	void printScopeTable(FILE *logout)
 	{
-		fprintf(logout, "------------------------------\n");
-		fprintf(logout,"ScopeTable #%d\n", id);
+		fprintf(logout, "	------------------------------\n");
+		fprintf(logout,"	ScopeTable #%d\n", id);
 		SymbolInfo *temp;
 
 		for (int i = 0; i < n; i++)
@@ -184,7 +184,7 @@ public:
 			if (!bucket[i])
 				continue;
 
-			fprintf(logout, "%d --> ", i);
+			fprintf(logout, "	%d --> ", i);
 			
 			temp = bucket[i];
 			while (temp)
@@ -196,7 +196,7 @@ public:
 			fprintf(logout, "\n");
 		}
 
-		fprintf(logout, "------------------------------\n");
+		fprintf(logout, "	------------------------------\n");
 	}
 
 	ScopeTable *getParentScopeTable() {

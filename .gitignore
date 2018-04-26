@@ -1,2 +1,4 @@
 lex.yy.c
+lex.yy.cc
+*.sh
 *.out

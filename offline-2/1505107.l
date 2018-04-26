@@ -1,3 +1,5 @@
+%option noyywrap
+%option c++
 
 /* definition section */
 %{
@@ -15,10 +17,12 @@ int line=1;
 
 
 DIGIT [0-9]
+DIGITS (DIGIT)+
 LETTER [a-zA-Z]
 NEWLINE "\n"
 WHITESPACE [ \t\r\v\f]+
 WORD [a-zA-Z]+
+IDENTIFIER ([a-zA-Z]|"_")[a-zA-Z0-9_]*
 
 
 /* a single line starts with 'double slash' and ends with a newline. 
@@ -33,7 +37,8 @@ SINGLE_LINE_COMMENT "//"[^"\n"]*
 */
 STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH "*"[^/]
 ANYTHING_EXCEPT_STAR [^*]
-MULTILINE_COMMENT ("/*"({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH})*"*/")
+
+MULTILINE_COMMENT ("/*")(ANYTHING_EXCEPT_STAR|STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH)*("*/")
 
 /* ----------------------------------------------- */
 /* keywords */
@@ -74,7 +79,11 @@ COMMA (",")
 SEMICOLON (";")
 /* ----------------------------------------------- */
 
-
+/* ----------------------------------------------- */
+/* Constants */
+INTEGER_LITERAL {DIGIT}+
+FLOAT_LITERAL {DIGITS}(.{DIGITS})?(E[+-]?{DIGITS})?
+/* ----------------------------------------------- */
 
 /* rules section */
 %%
@@ -244,6 +253,16 @@ SEMICOLON (";")
 {SEMICOLON} {
 	fprintf(token,"<SEMICOLON,%s>",yytext);
 	fprintf(f_log,"Line no. %d: TOKEN <SEMICOLON> Lexeme %s found\n",line,yytext);
+}
+
+{INTEGER_LITERAL} {
+	fprintf(token,"<CONST_INT,%s>",yytext);
+	fprintf(f_log,"Line no. %d: TOKEN <CONST_INT> Lexeme %s found\n",line,yytext);
+}
+
+{FLOAT_LITERAL} {
+	fprintf(token,"<CONST_FLOAT,%s>",yytext);
+	fprintf(f_log,"Line no. %d: TOKEN <CONST_FLOAT> Lexeme %s found\n",line,yytext);
 }
 
 %%

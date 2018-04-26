@@ -1,6 +1,8 @@
 int main(){
 	//this is a single line comment
 	int x,y;
+	3640;107;
+	3.14159;3.14159E-10;.314159;314159E10;
 	char c;
 	char d[10]="abcd";
 	char e[10]="ab\

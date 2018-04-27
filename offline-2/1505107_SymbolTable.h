@@ -184,12 +184,12 @@ public:
 			if (!bucket[i])
 				continue;
 
-			fprintf(logout, "	%d --> ", i);
+			fprintf(logout, "	%d  --> ", i);
 			
 			temp = bucket[i];
 			while (temp)
 			{
-				fprintf(logout, "<%s : %s> ", temp->getName().c_str(), temp->getType().c_str());
+				fprintf(logout, "<%s, %s> ", temp->getName().c_str(), temp->getType().c_str());
 				temp = temp->getNext();
 			}
 

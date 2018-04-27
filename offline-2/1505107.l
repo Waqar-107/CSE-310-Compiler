@@ -15,11 +15,36 @@ SymbolTable symbolTable(13);
 FILE *logout;
 FILE *tokenout;
 
+char ch;
+string str,str2;
 int line=1;
 int cnt_err=0;
 
 void printScopeTableFlex(string s,string t){
 	bool f=symbolTable.Insert(s,t,logout);
+	if(f)
+		symbolTable.PrintCurrentScopeTable(logout);
+
+	fprintf(logout,"\n");
+}
+
+void printScopeTableFlex_char(string s){
+	str="";
+	
+	//if length==3 then normal char, if 4, then \n,\t etc.
+	if(s.length()==3)
+		ch=s[1];
+	else
+	{
+		//brute force all the options
+		if(s[2]=='n')ch='\n';
+		else if(s[2]=='t')ch='\t';
+		
+
+	}
+
+	str.push_back(ch);
+	bool f=symbolTable.Insert(str,"CONST_CHAR",logout);
 	if(f)
 		symbolTable.PrintCurrentScopeTable(logout);
 
@@ -90,9 +115,11 @@ COMMA (",")
 SEMICOLON (";")
 /* ----------------------------------------------- */
 
+
 /* ----------------------------------------------- */
 /* Constants */
 INTEGER_LITERAL {DIGITS}
+
 
 /* the exponential part is optional
 *  before that, there can be three variations
@@ -103,6 +130,16 @@ EXPONENTIAL E(+|-)?{DIGITS}
 FLOAT_VAR_ONE {DIGITS}
 FLOAT_LITERAL_v_TWO {DIGITS}(E(+|-)?{DIGITS})
 FLOAT_LITERAL ({DIGITS}\.{DIGITS})
+
+
+/* from ASCII 32 to 254 
+*  32 is 'space', 254 is 'tilde'
+*  special characters are, 
+*  \n, \t, \\, \", \a, \f, \r, \b, \v, \0
+*/
+NORMAL_CHAR '([ -~]{-}['])'
+SPECIAL_CHAR '(\\[nt\\afrbv0\"])'
+CHAR_LITERAL {NORMAL_CHAR}|{SPECIAL_CHAR}
 /* ----------------------------------------------- */
 
 /* ----------------------------------------------- */
@@ -125,190 +162,197 @@ IDENTIFIER [a-zA-Z_][a-zA-Z0-9_]*
 }
 
 {BREAK} {
-	fprintf(tokenout,"<BREAK>");
+	fprintf(tokenout,"<BREAK>\n");
 	fprintf(logout,"Line no. %d: Token <BREAK> Lexeme %s found\n\n",line,yytext);
 }
 
 {CASE} {
-	fprintf(tokenout,"<CASE>");
+	fprintf(tokenout,"<CASE>\n");
 	fprintf(logout,"Line no. %d: Token <CASE> Lexeme %s found\n\n",line,yytext);
 }
 
 {CHAR} {
-	fprintf(tokenout,"<CHAR>");
+	fprintf(tokenout,"<CHAR>\n");
 	fprintf(logout,"Line no. %d: Token <CHAR> Lexeme %s found\n\n",line,yytext);
 }
 
 {CONTINUE} {
-	fprintf(tokenout,"<CONTINUE>");
+	fprintf(tokenout,"<CONTINUE>\n");
 	fprintf(logout,"Line no. %d: Token <CONTINUE> Lexeme %s found\n\n",line,yytext);
 }
 
 {DEFAULT} {
-	fprintf(tokenout,"<DEFAULT>");
+	fprintf(tokenout,"<DEFAULT>\n");
 	fprintf(logout,"Line no. %d: Token <DEFAULT> Lexeme %s found\n\n",line,yytext);
 }
 
 {DO} {
-	fprintf(tokenout,"<DO>");
+	fprintf(tokenout,"<DO>\n");
 	fprintf(logout,"Line no. %d: Token <DO> Lexeme %s found\n\n",line,yytext);
 }
 
 {DOUBLE} {
-	fprintf(tokenout,"<DOUBLE>");
+	fprintf(tokenout,"<DOUBLE>\n");
 	fprintf(logout,"Line no. %d: Token <DOUBLE> Lexeme %s found\n\n",line,yytext);
 }
 
 {ELSE} {
-	fprintf(tokenout,"<ELSE>");
+	fprintf(tokenout,"<ELSE>\n");
 	fprintf(logout,"Line no. %d: Token <ELSE> Lexeme %s found\n\n",line,yytext);
 }
 
 {FLOAT} {
-	fprintf(tokenout,"<FLOAT>");
+	fprintf(tokenout,"<FLOAT>\n");
 	fprintf(logout,"Line no. %d: Token <FLOAT> Lexeme %s found\n\n",line,yytext);
 }
 
 {FOR} {
-	fprintf(tokenout,"<FOR>");
+	fprintf(tokenout,"<FOR>\n");
 	fprintf(logout,"Line no. %d: Token <FOR> Lexeme %s found\n\n",line,yytext);
 }
 
 {IF} {
-	fprintf(tokenout,"<IF>");
+	fprintf(tokenout,"<IF>\n");
 	fprintf(logout,"Line no. %d: Token <IF> Lexeme %s found\n\n",line,yytext);
 }
 
 {INT} {
-	fprintf(tokenout,"<INT>");
+	fprintf(tokenout,"<INT>\n");
 	fprintf(logout,"Line no. %d: Token <INT> Lexeme %s found\n\n",line,yytext);
 
 }
 
 {RETURN} {
-	fprintf(tokenout,"<RETURN>");
+	fprintf(tokenout,"<RETURN>\n");
 	fprintf(logout,"Line no. %d: Token <RETURN> Lexeme %s found\n\n",line,yytext);
 }
 
 {SWITCH} {
-	fprintf(tokenout,"<SWITCH>");
+	fprintf(tokenout,"<SWITCH>\n");
 	fprintf(logout,"Line no. %d: Token <SWITCH> Lexeme %s found\n\n",line,yytext);
 }
 
 {WHILE} {
-	fprintf(tokenout,"<WHILE>");
+	fprintf(tokenout,"<WHILE>\n");
 	fprintf(logout,"Line no. %d: Token <WHILE> Lexeme %s found\n\n",line,yytext);
 }
 
 {VOID} {
-	fprintf(tokenout,"<VOID>");
+	fprintf(tokenout,"<VOID>\n");
 	fprintf(logout,"Line no. %d: Token <VOID> Lexeme %s found\n\n",line,yytext);
 }
 
 {ADDOP} {
-	fprintf(tokenout,"<ADDOP,%s>",yytext);
+	fprintf(tokenout,"<ADDOP,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <ADDOP> Lexeme %s found\n\n",line,yytext);
 	printScopeTableFlex(yytext,"ADDOP");
 }
 
 {MULOP} {
-	fprintf(tokenout,"<MULOP,%s>",yytext);
+	fprintf(tokenout,"<MULOP,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <MULOP> Lexeme %s found\n\n",line,yytext);
 	printScopeTableFlex(yytext,"MULOP");
 }
 
 {RELOP} {
-	fprintf(tokenout,"<RELOP,%s>",yytext);
+	fprintf(tokenout,"<RELOP,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <RELOP> Lexeme %s found\n\n",line,yytext);
 	printScopeTableFlex(yytext,"RELOP");
 }
 
 {INCOP} {
-	fprintf(tokenout,"<INCOP,%s>",yytext);
+	fprintf(tokenout,"<INCOP,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <INCOP> Lexeme %s found\n\n",line,yytext);
 	printScopeTableFlex(yytext,"INCOP");
 }
 
 {LOGICOP} {
-	fprintf(tokenout,"<LOGICOP,%s>",yytext);
+	fprintf(tokenout,"<LOGICOP,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <LOGICOP> Lexeme %s found\n\n",line,yytext);
 	printScopeTableFlex(yytext,"LOGICOP");
 }
 
 {ASSIGNOP} {
-	fprintf(tokenout,"<ASSIGNOP,%s>",yytext);
+	fprintf(tokenout,"<ASSIGNOP,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <ASSIGNOP> Lexeme %s found\n\n",line,yytext);
 	printScopeTableFlex(yytext,"ASSIGNOP");
 }
 
 {NOT} {
-	fprintf(tokenout,"<NOT,%s>",yytext);
+	fprintf(tokenout,"<NOT,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <NOT> Lexeme %s found\n\n",line,yytext);
 	printScopeTableFlex(yytext,"NOT");
 }
 
 {LPAREN} {
-	fprintf(tokenout,"<LPAREN,%s>",yytext);
+	fprintf(tokenout,"<LPAREN,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <LPAREN> Lexeme %s found\n\n",line,yytext);
 	printScopeTableFlex(yytext,"LPAREN");
 }
 
 {RPAREN} {
-	fprintf(tokenout,"<RPAREN,%s>",yytext);
+	fprintf(tokenout,"<RPAREN,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <RPAREN> Lexeme %s found\n\n",line,yytext);
 	printScopeTableFlex(yytext,"RPAREN");
 }
 
 {LCURL} {
-	fprintf(tokenout,"<LCURL,%s>",yytext);
+	fprintf(tokenout,"<LCURL,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <LCURL> Lexeme %s found\n\n",line,yytext);
 	printScopeTableFlex(yytext,"LCURL");
 }
 
 {RCURL} {
-	fprintf(tokenout,"<RCURL,%s>",yytext);
+	fprintf(tokenout,"<RCURL,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <RCURL> Lexeme %s found\n\n",line,yytext);
 	printScopeTableFlex(yytext,"RCURL");
 }
 
 {LTHIRD} {
-	fprintf(tokenout,"<LTHIRD,%s>",yytext);
+	fprintf(tokenout,"<LTHIRD,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <LTHIRD> Lexeme %s found\n\n",line,yytext);
 	printScopeTableFlex(yytext,"LTHIRD");
 }
 
 {RTHIRD} {
-	fprintf(tokenout,"<RTHIRD,%s>",yytext);
+	fprintf(tokenout,"<RTHIRD,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <RTHIRD> Lexeme %s found\n\n",line,yytext);
 	printScopeTableFlex(yytext,"RTHIRD");
 }
 
 {COMMA} {
-	fprintf(tokenout,"<COMMA,%s>",yytext);
+	fprintf(tokenout,"<COMMA,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <COMMA> Lexeme %s found\n\n",line,yytext);
 	printScopeTableFlex(yytext,"COMMA");
 }
 
 {SEMICOLON} {
-	fprintf(tokenout,"<SEMICOLON,%s>",yytext);
+	fprintf(tokenout,"<SEMICOLON,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <SEMICOLON> Lexeme %s found\n\n",line,yytext);
 	printScopeTableFlex(yytext,"SEMICOLON");
 }
 
 {INTEGER_LITERAL} {
-	fprintf(tokenout,"<CONST_INT,%s>",yytext);
+	fprintf(tokenout,"<CONST_INT,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <CONST_INT> Lexeme %s found\n\n",line,yytext);
 	printScopeTableFlex(yytext,"CONST_INT");
 }
 
 {FLOAT_LITERAL} {
-	fprintf(tokenout,"<CONST_FLOAT,%s>",yytext);
+	fprintf(tokenout,"<CONST_FLOAT,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <CONST_FLOAT> Lexeme %s found\n\n",line,yytext);
 	printScopeTableFlex(yytext,"CONST_FLOAT");
 }
 
+{CHAR_LITERAL} {
+	printScopeTableFlex_char(yytext);
+	fprintf(tokenout,"<CONST_CHAR,%s>\n",yytext);
+	fprintf(logout,"Line no. %d: Token <CONST_CHAR> Lexeme %s found\n\n",line,yytext);
+	
+}
+
 {IDENTIFIER} {
-	fprintf(tokenout,"<ID,%s>",yytext);
+	fprintf(tokenout,"<ID,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <ID> Lexeme %s found\n\n",line,yytext);
 	printScopeTableFlex(yytext,"ID");
 }

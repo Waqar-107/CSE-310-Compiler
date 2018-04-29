@@ -15,11 +15,11 @@ SymbolTable symbolTable(13);
 FILE *logout;
 FILE *tokenout;
 
-char ch;
-string str,str2;
 int line=1;
+int temp_line;
 int cnt_err=0;
 
+/* ----------------------------------------------- */
 void printScopeTableFlex(string s,string t){
 	bool f=symbolTable.Insert(s,t,logout);
 	if(f)
@@ -27,30 +27,61 @@ void printScopeTableFlex(string s,string t){
 
 	fprintf(logout,"\n");
 }
+/* ----------------------------------------------- */
 
+
+/* ----------------------------------------------- */
 void printScopeTableFlex_char(string s){
-	str="";
+
+	char ch;
+	string ps;
 	
 	//if length==3 then normal char, if 4, then \n,\t etc.
 	if(s.length()==3)
 		ch=s[1];
+
 	else
 	{
-		//brute force all the options
-		if(s[2]=='n')ch='\n';
-		else if(s[2]=='t')ch='\t';
+		int x,y;
+		int ascii=(int)yytext[2];
 		
+		//char chr[]={'\n','\t','\\','\"','\a','\f','\r','\b','\v','\0'};
 
+		if(s[2]=='n') {ch='\n';fprintf(logout,"printing special char whose ascii is %d\n",(int)'\n');}
+		else if(s[2]=='t') {ch='\t';fprintf(logout,"printing special char whose ascii is %d\n",(int)'\t');}
+		else if(s[2]=='a') {ch='\a';fprintf(logout,"printing special char whose ascii is %d\n",(int)'\a');}
+		else if(s[2]=='f') {ch='\f';fprintf(logout,"printing special char whose ascii is %d\n",(int)'\f');}
+		else if(s[2]=='r') {ch='\r';fprintf(logout,"printing special char whose ascii is %d\n",(int)'\r');}
+		else if(s[2]=='b') {ch='\b';fprintf(logout,"printing special char whose ascii is %d\n",(int)'\b');}
+		else if(s[2]=='v') {ch='\v';fprintf(logout,"printing special char whose ascii is %d\n",(int)'\v');}
+		else if(s[2]=='0') {ch='\0';fprintf(logout,"printing special char whose ascii is %d\n",(int)'\0');}
+
+		else if(s[2]=='\\') {ch='\\';fprintf(logout,"printing special char whose ascii is %d\n",(int)'\t');}
+		else if(s[2]=='\"') {ch='\"';fprintf(logout,"printing special char whose ascii is %d\n",(int)'\"');}
+    		
 	}
 
-	str.push_back(ch);
-	bool f=symbolTable.Insert(str,"CONST_CHAR",logout);
+	ps.push_back(ch);
+	fprintf(tokenout,"<CONST_CHAR,%s>\n",ps.c_str());
+	
+	bool f=symbolTable.Insert(ps,"CONST_CHAR",logout);
 	if(f)
 		symbolTable.PrintCurrentScopeTable(logout);
 
+	ps.clear();
 	fprintf(logout,"\n");
 }
+/* ----------------------------------------------- */
 
+/* ----------------------------------------------- */
+void countNewlineInComment(string s){
+	temp_line=line;
+	for(int i=1;i<s.length();i++){
+		if(s[i]=='\n')
+			line++;
+	}
+}
+/* ----------------------------------------------- */
 %}
 
 
@@ -61,12 +92,16 @@ NEWLINE \n
 WHITESPACE [ \t\r\v\f]+
 WORD [a-zA-Z]+
 
+
+/* ----------------------------------------------- */
 /* a single line starts with 'double slash' and ends with a newline. 
 *  in the middle, there can be literaly anything and any number of times.
 */
 SINGLE_LINE_COMMENT "//"[^"\n"]*
+/* ----------------------------------------------- */
 
 
+/* ----------------------------------------------- */
 /* for a multiline comment, it must start with backslash-star and 
 *  ends with star-backslash 
 *  in the middle there can be anything except star-backslash
@@ -75,6 +110,8 @@ STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH "*"[^/]*
 ANYTHING_EXCEPT_STAR [^*]*
 
 MULTILINE_COMMENT ("/*")({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH})("*/")
+/* ----------------------------------------------- */
+
 
 /* ----------------------------------------------- */
 /* keywords */
@@ -95,6 +132,7 @@ SWITCH "switch"
 WHILE "while"
 VOID "void"
 /* ----------------------------------------------- */
+
 
 /* ----------------------------------------------- */
 /* operators and punctuators */
@@ -120,19 +158,22 @@ SEMICOLON (";")
 /* Constants */
 INTEGER_LITERAL {DIGITS}
 
-
+/* --------------------------------- */
 /* the exponential part is optional
 *  before that, there can be three variations
 *  digits.digits, .digits, digits
 */
 
-EXPONENTIAL E(+|-)?{DIGITS}
-FLOAT_VAR_ONE {DIGITS}
-FLOAT_LITERAL_v_TWO {DIGITS}(E(+|-)?{DIGITS})
-FLOAT_LITERAL ({DIGITS}\.{DIGITS})
+EXPONENTIAL ([Ee][-+]?{DIGITS})
+FLOAT_VAR_ONE ({DIGITS}\.{DIGITS})({EXPONENTIAL})?
+FLOAT_VAR_TWO (\.{DIGITS})({EXPONENTIAL})?
+FLOAT_VAR_THREE ({DIGITS})({EXPONENTIAL})?
+FLOAT_LITERAL {FLOAT_VAR_ONE}|{FLOAT_VAR_TWO}|{FLOAT_VAR_THREE}
+/* --------------------------------- */
 
 
-/* from ASCII 32 to 254 
+/* 
+*  from ASCII 32 to 254 
 *  32 is 'space', 254 is 'tilde'
 *  special characters are, 
 *  \n, \t, \\, \", \a, \f, \r, \b, \v, \0
@@ -140,12 +181,43 @@ FLOAT_LITERAL ({DIGITS}\.{DIGITS})
 NORMAL_CHAR '([ -~]{-}['])'
 SPECIAL_CHAR '(\\[nt\\afrbv0\"])'
 CHAR_LITERAL {NORMAL_CHAR}|{SPECIAL_CHAR}
+
+
+/* 
+*  a string starts with a double quote, ends with a double qoute
+*  between them there can be anything,in multiline string, there
+*  will be a '\' and then a newline
+*/
 /* ----------------------------------------------- */
+
+STRING_START_AND_TERMINATE \"
+ANYTHING_EXCEPT_NEWLINE_AND_SLASH [^\n\"]*
+SLASH_NEWLINE (\\{NEWLINE})*
+STRING {STRING_START_AND_TERMINATE}({ANYTHING_EXCEPT_NEWLINE_AND_SLASH}|{SLASH_NEWLINE}){STRING_START_AND_TERMINATE}
+
 
 /* ----------------------------------------------- */
 /* Identifiers */
 IDENTIFIER [a-zA-Z_][a-zA-Z0-9_]*
 /* ----------------------------------------------- */
+
+
+/* ----------------------------------------------- */
+/* errors */
+
+/*Too many decimal point error for character sequence like 1.2.345*/
+DECIMAL [\.]
+TOO_MANY_DECIMAL_POINTS_ERROR ({DIGITS}\.{DIGITS}\.)
+
+
+/*invalid variable name*/
+VARIABLE_NAMING_ERROR [0-9][a-zA-Z0-9_]*
+
+
+/*multichar*/
+NCCH ([ -~]{-}['])
+SPCH (\\[nt\\afrbv0\"])
+MULTI_CHAR_ERROR (('{NCCH}|{SPCH})*')
 
 /* rules section */
 %%
@@ -158,7 +230,9 @@ IDENTIFIER [a-zA-Z_][a-zA-Z0-9_]*
 }
 
 {MULTILINE_COMMENT} {
-	fprintf(logout,"Line no. %d: Token <MULTI_LINE_COMMENT> Lexeme %s found\n\n",line,yytext);
+	countNewlineInComment(yytext);
+	fprintf(logout,"Line no. %d to %d: Token <MULTI_LINE_COMMENT> Lexeme %s found\n\n",temp_line,line,yytext);
+
 }
 
 {BREAK} {
@@ -345,10 +419,12 @@ IDENTIFIER [a-zA-Z_][a-zA-Z0-9_]*
 }
 
 {CHAR_LITERAL} {
-	printScopeTableFlex_char(yytext);
-	fprintf(tokenout,"<CONST_CHAR,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <CONST_CHAR> Lexeme %s found\n\n",line,yytext);
-	
+	printScopeTableFlex_char(yytext);
+}
+
+{STRING} {
+	fprintf(logout,"Line no. %d: Token <STRING> Lexeme %s found\n\n",line,yytext);
 }
 
 {IDENTIFIER} {
@@ -357,6 +433,13 @@ IDENTIFIER [a-zA-Z_][a-zA-Z0-9_]*
 	printScopeTableFlex(yytext,"ID");
 }
 
+{VARIABLE_NAMING_ERROR} {
+	fprintf(logout,"Error at line. %d: Invalid prefix on ID or invalid suffix on Number %s\n\n",line,yytext);
+}
+
+{MULTI_CHAR_ERROR} {
+	fprintf(logout,"Error at line. %d: Multi character constant error %s\n\n",line,yytext);
+}
 
 %%
 

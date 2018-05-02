@@ -73,6 +73,7 @@ void printScopeTableFlex_char(string s){
 }
 /* ----------------------------------------------- */
 
+
 /* ----------------------------------------------- */
 void countNewlineInComment(string s){
 	temp_line=line;
@@ -90,22 +91,20 @@ DIGITS {DIGIT}+
 LETTER [a-zA-Z]
 NEWLINE \n
 WHITESPACE [ \t\r\v\f]+
-WORD [a-zA-Z]+
 
 
 /* ----------------------------------------------- */
-/* a single line starts with 'double slash' and ends with a newline. 
-*  in the middle, there can be literaly anything and any number of times.
-*/
+/* a single line starts with 'double slash' and ends with a newline.in the middle, 
+   there can be literaly anything and any number of times.*/
+/* ----------------------------------------------- */
 SINGLE_LINE_COMMENT "//"[^"\n"]*
 /* ----------------------------------------------- */
 
 
 /* ----------------------------------------------- */
-/* for a multiline comment, it must start with backslash-star and 
-*  ends with star-backslash 
-*  in the middle there can be anything except star-backslash
-*/
+/* for a multiline comment, it must start with backslash-star and ends with star-backslash 
+   in the middle there can be anything except star-backslash */
+/* ----------------------------------------------- */
 STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH "*"[^/]*
 ANYTHING_EXCEPT_STAR [^*]*
 
@@ -156,19 +155,20 @@ SEMICOLON (";")
 
 /* ----------------------------------------------- */
 /* Constants */
+/* --------------------------------- */
 INTEGER_LITERAL {DIGITS}
+/* --------------------------------- */
 
 /* --------------------------------- */
 /* the exponential part is optional
-*  before that, there can be three variations
-*  digits.digits, .digits, digits
-*/
-
+   before that, there can be three variations
+   digits.digits, .digits, digits */
+/* --------------------------------- */   
 EXPONENTIAL ([Ee][-+]?{DIGITS})
 FLOAT_VAR_ONE ({DIGITS}\.{DIGITS})({EXPONENTIAL})?
 FLOAT_VAR_TWO (\.{DIGITS})({EXPONENTIAL})?
 FLOAT_VAR_THREE ({DIGITS})({EXPONENTIAL})?
-FLOAT_LITERAL {FLOAT_VAR_ONE}|{FLOAT_VAR_TWO}|{FLOAT_VAR_THREE}
+FLOAT_LITERAL ({FLOAT_VAR_ONE}|{FLOAT_VAR_TWO}|{FLOAT_VAR_THREE})
 /* --------------------------------- */
 
 
@@ -207,7 +207,9 @@ IDENTIFIER [a-zA-Z_][a-zA-Z0-9_]*
 
 /*Too many decimal point error for character sequence like 1.2.345*/
 DECIMAL [\.]
-TOO_MANY_DECIMAL_POINTS_ERROR ({DIGITS}\.{DIGITS}\.)
+FLOAT_VAR_ERR_TD1 ({DIGITS}\.{DIGITS})
+FLOAT_VAR_TWO_TD2 (\.{DIGITS})
+TOO_MANY_DECIMAL_POINTS_ERROR ({FLOAT_VAR_ERR_TD1}|{FLOAT_VAR_TWO_TD2})({FLOAT_VAR_ERR_TD1}|{FLOAT_VAR_TWO_TD2})*
 
 
 /*invalid variable name*/
@@ -218,6 +220,19 @@ VARIABLE_NAMING_ERROR [0-9][a-zA-Z0-9_]*
 NCCH ([ -~]{-}['])
 SPCH (\\[nt\\afrbv0\"])
 MULTI_CHAR_ERROR (('{NCCH}|{SPCH})*')
+
+
+/* ill formed number */
+/* here exponential is a must, after E, there will be a FLOAT_LITERAL */
+FLOAT_VAR_ONE_ERR ({DIGITS}\.{DIGITS})([Ee][-+]?)({FLOAT_LITERAL})
+FLOAT_VAR_TWO_ERR (\.{DIGITS})([Ee][-+]?)({FLOAT_LITERAL})
+FLOAT_VAR_THREE_ERR ({DIGITS})([Ee][-+]?)({FLOAT_LITERAL})
+ILL_FORMED_NUM {FLOAT_VAR_ONE_ERR}|{FLOAT_VAR_TWO_ERR}|{FLOAT_VAR_THREE_ERR}
+
+
+/* unfinished character */
+UNFINISHED_CHAR_ERROR ('\'|'{CHAR})
+
 
 /* rules section */
 %%
@@ -433,12 +448,29 @@ MULTI_CHAR_ERROR (('{NCCH}|{SPCH})*')
 	printScopeTableFlex(yytext,"ID");
 }
 
+{TOO_MANY_DECIMAL_POINTS_ERROR} {
+	cnt_err++;
+	fprintf(logout,"Error at line. %d: Too many decimal point error %s\n\n",line,yytext);
+}
+
 {VARIABLE_NAMING_ERROR} {
+	cnt_err++;
 	fprintf(logout,"Error at line. %d: Invalid prefix on ID or invalid suffix on Number %s\n\n",line,yytext);
 }
 
 {MULTI_CHAR_ERROR} {
+	cnt_err++;
 	fprintf(logout,"Error at line. %d: Multi character constant error %s\n\n",line,yytext);
+}
+
+{ILL_FORMED_NUM} {
+	cnt_err++;
+	fprintf(logout,"Error at line. %d: Ill formed numer: %s\n\n",line,yytext);
+}
+
+{UNFINISHED_CHAR_ERROR} {
+	cnt_err++;
+	fprintf(logout,"Error at line. %d: Unfinished character %s\n\n",line,yytext);
 }
 
 %%
@@ -458,8 +490,8 @@ int main(int argc,char *argv[])
 	}
 
 	
-	logout=fopen("log.txt","w");
-	tokenout=fopen("token.txt","w");
+	logout=fopen("1505107_log.txt","w");
+	tokenout=fopen("1505107_token.txt","w");
 	
 
 	yyin=in;

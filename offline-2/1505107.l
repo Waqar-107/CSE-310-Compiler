@@ -365,61 +365,51 @@ UNFINISHED_COMMENT ("/*")({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCE
 {ADDOP} {
 	fprintf(tokenout,"<ADDOP,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <ADDOP> Lexeme %s found\n\n",line,yytext);
-	printScopeTableFlex(yytext,"ADDOP");
 }
 
 {MULOP} {
 	fprintf(tokenout,"<MULOP,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <MULOP> Lexeme %s found\n\n",line,yytext);
-	printScopeTableFlex(yytext,"MULOP");
 }
 
 {RELOP} {
 	fprintf(tokenout,"<RELOP,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <RELOP> Lexeme %s found\n\n",line,yytext);
-	printScopeTableFlex(yytext,"RELOP");
 }
 
 {INCOP} {
 	fprintf(tokenout,"<INCOP,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <INCOP> Lexeme %s found\n\n",line,yytext);
-	printScopeTableFlex(yytext,"INCOP");
 }
 
 {LOGICOP} {
 	fprintf(tokenout,"<LOGICOP,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <LOGICOP> Lexeme %s found\n\n",line,yytext);
-	printScopeTableFlex(yytext,"LOGICOP");
 }
 
 {ASSIGNOP} {
 	fprintf(tokenout,"<ASSIGNOP,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <ASSIGNOP> Lexeme %s found\n\n",line,yytext);
-	printScopeTableFlex(yytext,"ASSIGNOP");
 }
 
 {NOT} {
 	fprintf(tokenout,"<NOT,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <NOT> Lexeme %s found\n\n",line,yytext);
-	printScopeTableFlex(yytext,"NOT");
 }
 
 {LPAREN} {
 	fprintf(tokenout,"<LPAREN,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <LPAREN> Lexeme %s found\n\n",line,yytext);
-	printScopeTableFlex(yytext,"LPAREN");
 }
 
 {RPAREN} {
 	fprintf(tokenout,"<RPAREN,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <RPAREN> Lexeme %s found\n\n",line,yytext);
-	printScopeTableFlex(yytext,"RPAREN");
 }
 
 {LCURL} {
 	fprintf(tokenout,"<LCURL,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <LCURL> Lexeme %s found\n\n",line,yytext);
-	printScopeTableFlex(yytext,"LCURL");
 }
 
 {RCURL} {
@@ -431,25 +421,21 @@ UNFINISHED_COMMENT ("/*")({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCE
 {LTHIRD} {
 	fprintf(tokenout,"<LTHIRD,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <LTHIRD> Lexeme %s found\n\n",line,yytext);
-	printScopeTableFlex(yytext,"LTHIRD");
 }
 
 {RTHIRD} {
 	fprintf(tokenout,"<RTHIRD,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <RTHIRD> Lexeme %s found\n\n",line,yytext);
-	printScopeTableFlex(yytext,"RTHIRD");
 }
 
 {COMMA} {
 	fprintf(tokenout,"<COMMA,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <COMMA> Lexeme %s found\n\n",line,yytext);
-	printScopeTableFlex(yytext,"COMMA");
 }
 
 {SEMICOLON} {
 	fprintf(tokenout,"<SEMICOLON,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <SEMICOLON> Lexeme %s found\n\n",line,yytext);
-	printScopeTableFlex(yytext,"SEMICOLON");
 }
 
 {INTEGER_LITERAL} {

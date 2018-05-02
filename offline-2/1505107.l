@@ -63,7 +63,6 @@ void printScopeTableFlex_char(string s){
 
 	ps.push_back(ch);
 	fprintf(tokenout,"<CONST_CHAR,%s>\n",ps.c_str());
-	
 	bool f=symbolTable.Insert(ps,"CONST_CHAR",logout);
 	if(f)
 		symbolTable.PrintCurrentScopeTable(logout);
@@ -93,26 +92,28 @@ NEWLINE \n
 WHITESPACE [ \t\r\v\f]+
 
 
-/* ----------------------------------------------- */
+/* ---------------------------------------------------------------------------------------- */
 /* a single line starts with 'double slash' and ends with a newline.in the middle, 
    there can be literaly anything and any number of times.*/
 /* ----------------------------------------------- */
 SINGLE_LINE_COMMENT "//"[^"\n"]*
-/* ----------------------------------------------- */
+/* ---------------------------------------------------------------------------------------- */
 
 
-/* ----------------------------------------------- */
+
+/* ---------------------------------------------------------------------------------------- */
 /* for a multiline comment, it must start with backslash-star and ends with star-backslash 
    in the middle there can be anything except star-backslash */
 /* ----------------------------------------------- */
-STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH "*"[^/]*
-ANYTHING_EXCEPT_STAR [^*]*
+STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH "*"[^/]
+ANYTHING_EXCEPT_STAR [^*]
 
-MULTILINE_COMMENT ("/*")({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH})("*/")
-/* ----------------------------------------------- */
+MULTILINE_COMMENT ("/*")({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH})*("*/")
+/* ---------------------------------------------------------------------------------------- */
 
 
-/* ----------------------------------------------- */
+
+/* ---------------------------------------------------------------------------------------- */
 /* keywords */
 BREAK "break"
 CASE "case"
@@ -130,10 +131,10 @@ RETURN "return"
 SWITCH "switch"
 WHILE "while"
 VOID "void"
-/* ----------------------------------------------- */
+/* ---------------------------------------------------------------------------------------- */
 
 
-/* ----------------------------------------------- */
+/* ---------------------------------------------------------------------------------------- */
 /* operators and punctuators */
 ADDOP [+-]
 MULOP [*/%]
@@ -150,14 +151,17 @@ LTHIRD ("[")
 RTHIRD ("]")
 COMMA (",")
 SEMICOLON (";")
-/* ----------------------------------------------- */
+/* ---------------------------------------------------------------------------------------- */
 
 
-/* ----------------------------------------------- */
+
+/* ---------------------------------------------------------------------------------------- */
 /* Constants */
+
 /* --------------------------------- */
 INTEGER_LITERAL {DIGITS}
 /* --------------------------------- */
+
 
 /* --------------------------------- */
 /* the exponential part is optional
@@ -173,12 +177,12 @@ FLOAT_LITERAL ({FLOAT_VAR_ONE}|{FLOAT_VAR_TWO}|{FLOAT_VAR_THREE})
 
 
 /* 
-*  from ASCII 32 to 254 
-*  32 is 'space', 254 is 'tilde'
+*  from ASCII 32 to 126 is printable 
+*  32 is 'space', 126 is 'tilde'
 *  special characters are, 
 *  \n, \t, \\, \", \a, \f, \r, \b, \v, \0
 */
-NORMAL_CHAR '([ -~]{-}['])'
+NORMAL_CHAR '([ -~]{-}['\\])'
 SPECIAL_CHAR '(\\[nt\\afrbv0\"])'
 CHAR_LITERAL {NORMAL_CHAR}|{SPECIAL_CHAR}
 
@@ -201,38 +205,65 @@ STRING {STRING_START_AND_TERMINATE}({ANYTHING_EXCEPT_NEWLINE_AND_SLASH}|{SLASH_N
 IDENTIFIER [a-zA-Z_][a-zA-Z0-9_]*
 /* ----------------------------------------------- */
 
+/* ---------------------------------------------------------------------------------------- */
 
-/* ----------------------------------------------- */
+
+
+/* ---------------------------------------------------------------------------------------- */
 /* errors */
 
+/*----------------------------------------*/
 /*Too many decimal point error for character sequence like 1.2.345*/
-DECIMAL [\.]
 FLOAT_VAR_ERR_TD1 ({DIGITS}\.{DIGITS})
 FLOAT_VAR_TWO_TD2 (\.{DIGITS})
 TOO_MANY_DECIMAL_POINTS_ERROR ({FLOAT_VAR_ERR_TD1}|{FLOAT_VAR_TWO_TD2})({FLOAT_VAR_ERR_TD1}|{FLOAT_VAR_TWO_TD2})*
+/*----------------------------------------*/
 
 
+/*----------------------------------------*/
 /*invalid variable name*/
 VARIABLE_NAMING_ERROR [0-9][a-zA-Z0-9_]*
+/*----------------------------------------*/
 
 
+/*----------------------------------------*/
 /*multichar*/
-NCCH ([ -~]{-}['])
+NCCH ([ -~]{-}['\\])
 SPCH (\\[nt\\afrbv0\"])
-MULTI_CHAR_ERROR (('{NCCH}|{SPCH})*')
+MULTI_CHAR_ERROR '(({NCCH}|{SPCH})*)'
+/*----------------------------------------*/
 
 
+/*----------------------------------------*/
 /* ill formed number */
 /* here exponential is a must, after E, there will be a FLOAT_LITERAL */
 FLOAT_VAR_ONE_ERR ({DIGITS}\.{DIGITS})([Ee][-+]?)({FLOAT_LITERAL})
 FLOAT_VAR_TWO_ERR (\.{DIGITS})([Ee][-+]?)({FLOAT_LITERAL})
 FLOAT_VAR_THREE_ERR ({DIGITS})([Ee][-+]?)({FLOAT_LITERAL})
 ILL_FORMED_NUM {FLOAT_VAR_ONE_ERR}|{FLOAT_VAR_TWO_ERR}|{FLOAT_VAR_THREE_ERR}
+/*----------------------------------------*/
 
 
+/*----------------------------------------*/
 /* unfinished character */
-UNFINISHED_CHAR_ERROR ('\'|'{CHAR})
+/* */
+UNFINISHED_CHAR_ERROR_ONE '({NORMAL_CHAR}|{SPECIAL_CHAR})+
+UNFINISHED_CHAR_ERROR_TWO ({NORMAL_CHAR}|{SPECIAL_CHAR})+'
+SINGLE_FORWARD_SLASH_DETECTOR '[\\]'
+UNFINISHED_CHAR_ERROR {UNFINISHED_CHAR_ERROR_ONE}|{UNFINISHED_CHAR_ERROR_TWO}|{SINGLE_FORWARD_SLASH_DETECTOR}
+/*----------------------------------------*/
 
+
+/*----------------------------------------*/
+/* Unrecognized character */
+UNRECOGNIZED_CHAR [^ -~]
+/*----------------------------------------*/
+
+
+/*----------------------------------------*/
+/* unfinished comment*/
+UNFINISHED_COMMENT ("/*")({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH})*
+/*----------------------------------------*/
 
 /* rules section */
 %%
@@ -473,6 +504,11 @@ UNFINISHED_CHAR_ERROR ('\'|'{CHAR})
 	fprintf(logout,"Error at line. %d: Unfinished character %s\n\n",line,yytext);
 }
 
+{UNFINISHED_COMMENT} {
+	cnt_err++;
+	fprintf(logout,"Error at line. %d: Unfinished comment found %s\n\n",line,yytext);
+}
+
 %%
 
 
@@ -496,6 +532,9 @@ int main(int argc,char *argv[])
 
 	yyin=in;
 	yylex();
+
+	//no. of total lines and erros
+	fprintf(logout,"Total %d lines code read.\n\nTotal %d errors found\n\n",line,cnt_err);
 
 	fclose(yyin);
 	fclose(logout);

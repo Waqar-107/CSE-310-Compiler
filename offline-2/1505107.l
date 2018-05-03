@@ -6,6 +6,7 @@
 #include<cstdio>
 #include<cstdlib>
 #include<string>
+#include<iostream>
 #include"1505107_SymbolTable.h"
 
 using namespace std;
@@ -82,19 +83,49 @@ void countNewlineInComment(string s){
 	}
 }
 /* ----------------------------------------------- */
+
+
+/* ----------------------------------------------- */
+void processString(string s){
+	int len=s.length();
+
+	char ch;
+	string str="";
+
+	temp_line=line;
+
+	for(int i=1;i<=len-2;i++)
+	{
+		//if \ is in ith index, see if s[i+2]=='\n' or '\0', 
+		if(i+2<=len-2 && s[i]=='\\' && s[i+2]=='\n'){
+			line++;i+=2;ch='\n';
+		}
+
+		else
+			ch=s[i];
+    	
+
+    	str.push_back(ch);
+	}
+
+	fprintf(logout,"Line no. %d to %d: Token <STRING> Lexeme %s found\n\n",temp_line,line,str.c_str());
+	fprintf(tokenout,"<String,%s>\n",str.c_str());
+}
+/* ----------------------------------------------- */
 %}
 
 
 DIGIT [0-9]
 DIGITS {DIGIT}+
 LETTER [a-zA-Z]
-NEWLINE \n
+NEWLINE [\n]
 WHITESPACE [ \t\r\v\f]+
 
 
 /* ---------------------------------------------------------------------------------------- */
 /* a single line starts with 'double slash' and ends with a newline.in the middle, 
-   there can be literaly anything and any number of times.*/
+   there can be literaly anything and any number of times.
+   but if it has '\' and then '\n' it would be considered as muliline comment*/
 /* ----------------------------------------------- */
 SINGLE_LINE_COMMENT "//"[^"\n"]*
 /* ---------------------------------------------------------------------------------------- */
@@ -176,7 +207,7 @@ FLOAT_LITERAL ({FLOAT_VAR_ONE}|{FLOAT_VAR_TWO}|{FLOAT_VAR_THREE})
 /* --------------------------------- */
 
 
-/* 
+/* ---------------------------------
 *  from ASCII 32 to 126 is printable 
 *  32 is 'space', 126 is 'tilde'
 *  special characters are, 
@@ -185,20 +216,25 @@ FLOAT_LITERAL ({FLOAT_VAR_ONE}|{FLOAT_VAR_TWO}|{FLOAT_VAR_THREE})
 NORMAL_CHAR '([ -~]{-}['\\])'
 SPECIAL_CHAR '(\\[nt\\afrbv0\"])'
 CHAR_LITERAL {NORMAL_CHAR}|{SPECIAL_CHAR}
+/* --------------------------------- */
 
 
-/* 
+/*--------------------------------- 
 *  a string starts with a double quote, ends with a double qoute
 *  between them there can be anything,in multiline string, there
 *  will be a '\' and then a newline
 */
-/* ----------------------------------------------- */
-
 STRING_START_AND_TERMINATE \"
-ANYTHING_EXCEPT_NEWLINE_AND_SLASH [^\n\"]*
-SLASH_NEWLINE (\\{NEWLINE})*
-STRING {STRING_START_AND_TERMINATE}({ANYTHING_EXCEPT_NEWLINE_AND_SLASH}|{SLASH_NEWLINE}){STRING_START_AND_TERMINATE}
+ANYTHING_EXCEPT_NEWLINE_AND_QOUTE [^\"\n]
+SLASH_FOLLOWED_BY_NEWLINE ([\\]*{NEWLINE})
+NEWLINE_WITHOUT_SLASH ([^\\]{NEWLINE})
+QUOTE ([\\])[\"]
 
+STRING_MIDDLE {ANYTHING_EXCEPT_NEWLINE_AND_QOUTE}|{QUOTE}|{SLASH_FOLLOWED_BY_NEWLINE}
+STRING_MIDDLE_ERR {ANYTHING_EXCEPT_NEWLINE_AND_QOUTE}|{QUOTE}|{NEWLINE_WITHOUT_SLASH}
+
+STRING ({STRING_START_AND_TERMINATE})({STRING_MIDDLE})*({STRING_START_AND_TERMINATE})
+/* ----------------------------------------------- */
 
 /* ----------------------------------------------- */
 /* Identifiers */
@@ -246,27 +282,41 @@ ILL_FORMED_NUM {FLOAT_VAR_ONE_ERR}|{FLOAT_VAR_TWO_ERR}|{FLOAT_VAR_THREE_ERR}
 
 /*----------------------------------------*/
 /* unfinished character */
-/* */
-UNFINISHED_CHAR_ERROR_ONE '({NORMAL_CHAR}|{SPECIAL_CHAR})+
-UNFINISHED_CHAR_ERROR_TWO ({NORMAL_CHAR}|{SPECIAL_CHAR})+'
+NORMAL_CHAR_FOR_ERR ([ -~]{-}['\\])
+SPECIAL_CHAR_FOR_ERR (\\[nt\\afrbv0\"])
+
+UNFINISHED_CHAR_ERROR_ONE '({NORMAL_CHAR_FOR_ERR}|{SPECIAL_CHAR_FOR_ERR})
 SINGLE_FORWARD_SLASH_DETECTOR '[\\]'
-UNFINISHED_CHAR_ERROR {UNFINISHED_CHAR_ERROR_ONE}|{UNFINISHED_CHAR_ERROR_TWO}|{SINGLE_FORWARD_SLASH_DETECTOR}
+
+UNFINISHED_CHAR_ERROR {UNFINISHED_CHAR_ERROR_ONE}|{SINGLE_FORWARD_SLASH_DETECTOR}
 /*----------------------------------------*/
 
 
 /*----------------------------------------*/
 /* Unrecognized character */
-UNRECOGNIZED_CHAR [^ -~]
+UNRECOGNIZED_CHAR .
 /*----------------------------------------*/
 
 
 /*----------------------------------------*/
-/* unfinished comment*/
+/* unfinished comment */
 UNFINISHED_COMMENT ("/*")({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH})*
+/*----------------------------------------*/
+
+
+/*----------------------------------------*/
+/* unfinished string */
+/*for a single line string, it will not finish using a "
+  for a multiline, it will either not finished by a " or there will be 
+  a newline without \, or both*/
+UNFINISHED_STRING_ONE ({STRING_START_AND_TERMINATE})({STRING_MIDDLE})*
+UNFINISHED_STRING_TWO ({STRING_START_AND_TERMINATE})({STRING_MIDDLE_ERR})*({STRING_START_AND_TERMINATE})
+UNFINISHED_STRING {UNFINISHED_STRING_TWO}|{UNFINISHED_STRING_TWO}
 /*----------------------------------------*/
 
 /* rules section */
 %%
+
 {NEWLINE} {
 	line++;
 }
@@ -279,6 +329,11 @@ UNFINISHED_COMMENT ("/*")({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCE
 	countNewlineInComment(yytext);
 	fprintf(logout,"Line no. %d to %d: Token <MULTI_LINE_COMMENT> Lexeme %s found\n\n",temp_line,line,yytext);
 
+}
+
+{UNFINISHED_STRING} {
+	cnt_err++;
+	fprintf(logout,"Error at line. %d: Unfinished comment found %s\n\n",line,yytext);
 }
 
 {BREAK} {
@@ -415,7 +470,6 @@ UNFINISHED_COMMENT ("/*")({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCE
 {RCURL} {
 	fprintf(tokenout,"<RCURL,%s>\n",yytext);
 	fprintf(logout,"Line no. %d: Token <RCURL> Lexeme %s found\n\n",line,yytext);
-	printScopeTableFlex(yytext,"RCURL");
 }
 
 {LTHIRD} {
@@ -456,7 +510,7 @@ UNFINISHED_COMMENT ("/*")({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCE
 }
 
 {STRING} {
-	fprintf(logout,"Line no. %d: Token <STRING> Lexeme %s found\n\n",line,yytext);
+	processString(yytext);
 }
 
 {IDENTIFIER} {
@@ -494,6 +548,8 @@ UNFINISHED_COMMENT ("/*")({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCE
 	cnt_err++;
 	fprintf(logout,"Error at line. %d: Unfinished comment found %s\n\n",line,yytext);
 }
+
+
 
 %%
 

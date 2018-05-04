@@ -111,7 +111,7 @@ WHITESPACE [ \t\r\v\f]+
    there can be literaly anything and any number of times.
    but if it has '\' and then '\n' it would be considered as muliline comment*/
 /* ----------------------------------------------- */
-SINGLE_LINE_COMMENT "//"[^"\n"]*
+SINGLE_LINE_COMMENT "//"[^\n]*
 /* ---------------------------------------------------------------------------------------- */
 
 
@@ -120,10 +120,14 @@ SINGLE_LINE_COMMENT "//"[^"\n"]*
 /* for a multiline comment, it must start with backslash-star and ends with star-backslash 
    in the middle there can be anything except star-backslash */
 /* ----------------------------------------------- */
-STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH "*"[^/]
+STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH \*[^\/]
 ANYTHING_EXCEPT_STAR [^*]
 
 MULTILINE_COMMENT ("/*")({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH})*("*/")
+/* ---------------------------------------------------------------------------------------- */
+ANYTHING_EXCEPT_NL ([^\n])*
+SLASH_FOLLWED_BY_NEWLINE ([\\])*[\n]
+MULTILINE_COMMENT_2 [\/][\/]({ANYTHING_EXCEPT_NL}|{SLASH_FOLLWED_BY_NEWLINE})
 /* ---------------------------------------------------------------------------------------- */
 
 
@@ -289,6 +293,10 @@ UNFINISHED_STRING {UNFINISHED_STRING_VAR_TWO}
 
 /* rules section */
 %%
+
+{WHITESPACE} {
+	//printf("ignoring space\n");
+}
 
 {NEWLINE} {
 	line++;

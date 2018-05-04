@@ -92,23 +92,7 @@ void processString(string s){
 	char ch;
 	string str="";
 
-	temp_line=line;
-
-	for(int i=1;i<=len-2;i++)
-	{
-		//if \ is in ith index, see if s[i+2]=='\n' or '\0', 
-		if(i+2<=len-2 && s[i]=='\\' && s[i+2]=='\n'){
-			line++;i+=2;ch='\n';
-		}
-
-		else
-			ch=s[i];
-    	
-
-    	str.push_back(ch);
-	}
-
-	fprintf(logout,"Line no. %d to %d: Token <STRING> Lexeme %s found\n\n",temp_line,line,str.c_str());
+	fprintf(logout,"Line no. %d: Token <STRING> Lexeme %s found\n\n",line,yytext);
 	fprintf(tokenout,"<String,%s>\n",str.c_str());
 }
 /* ----------------------------------------------- */
@@ -219,21 +203,12 @@ CHAR_LITERAL {NORMAL_CHAR}|{SPECIAL_CHAR}
 /* --------------------------------- */
 
 
-/*--------------------------------- 
+/* --------------------------------- 
 *  a string starts with a double quote, ends with a double qoute
 *  between them there can be anything,in multiline string, there
 *  will be a '\' and then a newline
-*/
-STRING_START_AND_TERMINATE \"
-ANYTHING_EXCEPT_NEWLINE_AND_QOUTE [^\"\n]
-SLASH_FOLLOWED_BY_NEWLINE ([\\]*{NEWLINE})
-NEWLINE_WITHOUT_SLASH ([^\\]{NEWLINE})
-QUOTE ([\\])[\"]
-
-STRING_MIDDLE {ANYTHING_EXCEPT_NEWLINE_AND_QOUTE}|{QUOTE}|{SLASH_FOLLOWED_BY_NEWLINE}
-STRING_MIDDLE_ERR {ANYTHING_EXCEPT_NEWLINE_AND_QOUTE}|{QUOTE}|{NEWLINE_WITHOUT_SLASH}
-
-STRING ({STRING_START_AND_TERMINATE})({STRING_MIDDLE})*({STRING_START_AND_TERMINATE})
+*  --------------------------------*/
+STRING \"(\\\n|[^"\n]|\\\")*\"
 /* ----------------------------------------------- */
 
 /* ----------------------------------------------- */
@@ -306,12 +281,10 @@ UNFINISHED_COMMENT ("/*")({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCE
 
 /*----------------------------------------*/
 /* unfinished string */
-/*for a single line string, it will not finish using a "
-  for a multiline, it will either not finished by a " or there will be 
-  a newline without \, or both*/
-UNFINISHED_STRING_ONE ({STRING_START_AND_TERMINATE})({STRING_MIDDLE})*
-UNFINISHED_STRING_TWO ({STRING_START_AND_TERMINATE})({STRING_MIDDLE_ERR})*({STRING_START_AND_TERMINATE})
-UNFINISHED_STRING {UNFINISHED_STRING_TWO}|{UNFINISHED_STRING_TWO}
+/*for a single line string, it will not finish using a "*/
+UNFINISHED_STRING_VAR_ONE \"(\\\n|[^"\n]|\\\")*
+UNFINISHED_STRING_VAR_TWO \"([^\\]\n|[^\n"]|[^\\]\")*\"
+UNFINISHED_STRING {UNFINISHED_STRING_VAR_TWO}
 /*----------------------------------------*/
 
 /* rules section */
@@ -329,11 +302,6 @@ UNFINISHED_STRING {UNFINISHED_STRING_TWO}|{UNFINISHED_STRING_TWO}
 	countNewlineInComment(yytext);
 	fprintf(logout,"Line no. %d to %d: Token <MULTI_LINE_COMMENT> Lexeme %s found\n\n",temp_line,line,yytext);
 
-}
-
-{UNFINISHED_STRING} {
-	cnt_err++;
-	fprintf(logout,"Error at line. %d: Unfinished comment found %s\n\n",line,yytext);
 }
 
 {BREAK} {
@@ -544,12 +512,20 @@ UNFINISHED_STRING {UNFINISHED_STRING_TWO}|{UNFINISHED_STRING_TWO}
 	fprintf(logout,"Error at line. %d: Unfinished character %s\n\n",line,yytext);
 }
 
+{UNRECOGNIZED_CHAR} {
+	cnt_err++;
+	fprintf(logout,"Error at line. %d: Unrecognized char %s\n\n",line,yytext);
+}
+
 {UNFINISHED_COMMENT} {
 	cnt_err++;
 	fprintf(logout,"Error at line. %d: Unfinished comment found %s\n\n",line,yytext);
 }
 
-
+{UNFINISHED_STRING} {
+	cnt_err++;
+	fprintf(logout,"Error at line. %d: Unfinished string found %s\n\n",line,yytext);
+}
 
 %%
 

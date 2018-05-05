@@ -6,6 +6,7 @@
 #include<cstdio>
 #include<cstdlib>
 #include<string>
+#include<cstring>
 #include<iostream>
 #include"1505107_SymbolTable.h"
 
@@ -87,15 +88,22 @@ void countNewlineInComment(string s){
 
 /* ----------------------------------------------- */
 void processString(string s){
-	int len=s.length();
-
-	char ch;
+	
+	temp_line=line;
 	string str="";
 
-	fprintf(logout,"Line no. %d: Token <STRING> Lexeme %s found\n\n",line,yytext);
-	fprintf(tokenout,"<String,%s>\n",str.c_str());
+	for(int i=0;i<s.length();i++){
+		if(i+1<s.length() && s[i]=='\\' && s[i+1]=='\n')
+			i++;
+		else
+			str.push_back(s[i]);
+	}
+
+	fprintf(logout,"Line no. %d: Token <STRING> Lexeme %s\n\n",temp_line,str.c_str());
+	fprintf(tokenout,"<STRING,%s>\n\n",str.c_str());
 }
 /* ----------------------------------------------- */
+
 %}
 
 
@@ -103,7 +111,7 @@ DIGIT [0-9]
 DIGITS {DIGIT}+
 LETTER [a-zA-Z]
 NEWLINE [\n]
-WHITESPACE [ \t\r\v\f]+
+WHITESPACE [ \t\f\r\v]+
 
 
 /* ---------------------------------------------------------------------------------------- */
@@ -111,9 +119,11 @@ WHITESPACE [ \t\r\v\f]+
    there can be literaly anything and any number of times.
    but if it has '\' and then '\n' it would be considered as muliline comment*/
 /* ----------------------------------------------- */
-SINGLE_LINE_COMMENT "//"[^\n]*
+SLASH_OR_SLASH_FOLLOWED_BY_NEWLINE ([\\]+([\n])?)?
+ANYTHING_EXCEPT_NEWLINE [^\n]*
+SINGLE_LINE_COMMENT2 "//"(([\\]+([\n])?)?|[^\n]*)*
+SINGLE_LINE_COMMENT "//"({SLASH_OR_SLASH_FOLLOWED_BY_NEWLINE}|{ANYTHING_EXCEPT_NEWLINE})*
 /* ---------------------------------------------------------------------------------------- */
-
 
 
 /* ---------------------------------------------------------------------------------------- */
@@ -125,11 +135,6 @@ ANYTHING_EXCEPT_STAR [^*]
 
 MULTILINE_COMMENT ("/*")({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCEPT_SLASH})*("*/")
 /* ---------------------------------------------------------------------------------------- */
-ANYTHING_EXCEPT_NL ([^\n])*
-SLASH_FOLLWED_BY_NEWLINE ([\\])*[\n]
-MULTILINE_COMMENT_2 [\/][\/]({ANYTHING_EXCEPT_NL}|{SLASH_FOLLWED_BY_NEWLINE})
-/* ---------------------------------------------------------------------------------------- */
-
 
 
 /* ---------------------------------------------------------------------------------------- */
@@ -212,7 +217,9 @@ CHAR_LITERAL {NORMAL_CHAR}|{SPECIAL_CHAR}
 *  between them there can be anything,in multiline string, there
 *  will be a '\' and then a newline
 *  --------------------------------*/
-STRING \"(\\\n|[^"\n]|\\\")*\"
+SPC_FOR_STR (\\\n|\\\")
+NORMAL_CHAR_FOR_STR [^\n\"]
+STRING \"({SPC_FOR_STR}|{NORMAL_CHAR_FOR_STR})*\"
 /* ----------------------------------------------- */
 
 /* ----------------------------------------------- */
@@ -264,7 +271,7 @@ ILL_FORMED_NUM {FLOAT_VAR_ONE_ERR}|{FLOAT_VAR_TWO_ERR}|{FLOAT_VAR_THREE_ERR}
 NORMAL_CHAR_FOR_ERR ([ -~]{-}['\\])
 SPECIAL_CHAR_FOR_ERR (\\[nt\\afrbv0\"])
 
-UNFINISHED_CHAR_ERROR_ONE '({NORMAL_CHAR_FOR_ERR}|{SPECIAL_CHAR_FOR_ERR})
+UNFINISHED_CHAR_ERROR_ONE '({NORMAL_CHAR_FOR_ERR}|{SPECIAL_CHAR_FOR_ERR})*
 SINGLE_FORWARD_SLASH_DETECTOR '[\\]'
 
 UNFINISHED_CHAR_ERROR {UNFINISHED_CHAR_ERROR_ONE}|{SINGLE_FORWARD_SLASH_DETECTOR}
@@ -285,31 +292,24 @@ UNFINISHED_COMMENT ("/*")({ANYTHING_EXCEPT_STAR}|{STAR_FOLLOWED_BY_ANYTHING_EXCE
 
 /*----------------------------------------*/
 /* unfinished string */
-/*for a single line string, it will not finish using a "*/
-UNFINISHED_STRING_VAR_ONE \"(\\\n|[^"\n]|\\\")*
-UNFINISHED_STRING_VAR_TWO \"([^\\]\n|[^\n"]|[^\\]\")*\"
-UNFINISHED_STRING {UNFINISHED_STRING_VAR_TWO}
+/*for a single line string, it will not finish using a \" */
+ANYTHING_EXCEPT_SLASH_BEFORE_NEWLINE [^\\]\n
+UNFINISHED_STRING \"[^\"]*
+UNFINISHED_STRING_VAR_ONE \"({SPC_FOR_STR}|{NORMAL_CHAR_FOR_STR})*
+UNFINISHED_STRING_VAR_TWO \"({ANYTHING_EXCEPT_NEWLINE}|{ANYTHING_EXCEPT_SLASH_BEFORE_NEWLINE})\"
 /*----------------------------------------*/
 
 /* rules section */
 %%
 
-{WHITESPACE} {
-	//printf("ignoring space\n");
-}
-
-{NEWLINE} {
-	line++;
-}
-
 {SINGLE_LINE_COMMENT} {
+	countNewlineInComment(yytext);
 	fprintf(logout,"Line no. %d: Token <SINGLE_LINE_COMMENT> Lexeme %s found\n\n",line,yytext);
 }
 
 {MULTILINE_COMMENT} {
 	countNewlineInComment(yytext);
 	fprintf(logout,"Line no. %d to %d: Token <MULTI_LINE_COMMENT> Lexeme %s found\n\n",temp_line,line,yytext);
-
 }
 
 {BREAK} {
@@ -520,11 +520,6 @@ UNFINISHED_STRING {UNFINISHED_STRING_VAR_TWO}
 	fprintf(logout,"Error at line. %d: Unfinished character %s\n\n",line,yytext);
 }
 
-{UNRECOGNIZED_CHAR} {
-	cnt_err++;
-	fprintf(logout,"Error at line. %d: Unrecognized char %s\n\n",line,yytext);
-}
-
 {UNFINISHED_COMMENT} {
 	cnt_err++;
 	fprintf(logout,"Error at line. %d: Unfinished comment found %s\n\n",line,yytext);
@@ -532,8 +527,17 @@ UNFINISHED_STRING {UNFINISHED_STRING_VAR_TWO}
 
 {UNFINISHED_STRING} {
 	cnt_err++;
-	fprintf(logout,"Error at line. %d: Unfinished string found %s\n\n",line,yytext);
+	fprintf(logout,"Error at line %d: Unfinished string found %s\n\n",line,yytext);
 }
+
+{NEWLINE} {
+	line++;
+}
+
+{WHITESPACE} {
+	//printf("ignoring space\n");
+}
+
 
 %%
 

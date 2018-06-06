@@ -12,7 +12,7 @@ using namespace std;
 int line=1, temp_line, cnt_err=0;
 
 /* ----------------------------------------------- */
-void printScopeTableFlex_char(string s){
+void processChar(string s){
 
 	char ch;
 	string ps;
@@ -43,8 +43,11 @@ void printScopeTableFlex_char(string s){
 	}
 
 	ps.push_back(ch);
+
+	SymbolInfo *x=new SymbolInfo(ps.c_str(),"CONST_CHAR");
 	ps.clear();
-	
+
+	return CONST_CHAR;
 }
 /* ----------------------------------------------- */
 
@@ -72,6 +75,11 @@ void processString(string s){
 		else
 			str.push_back(s[i]);
 	}
+
+	printf("%s\n",str.c_str());
+
+	SymbolInfo *x=new SymbolInfo(str.c_str(),"STRING");
+	return STRING;
 }
 /* ----------------------------------------------- */
 
@@ -132,6 +140,7 @@ INCOP ("++"|"--")
 RELOP (">"|">="|"<"|"<="|"=="|"!=")
 ASSIGNOP ("=")
 LOGICOP ("&&"|"||")
+BITOP ("&"|"|"|"^"|"<<"|">>")
 NOT ("!")
 LPAREN ("(")
 RPAREN (")")
@@ -258,164 +267,174 @@ UNFINISHED_STRING (\"([^\"\n]|\\[\n])*)
 
 {SINGLE_LINE_COMMENT} {
 	countNewlineInComment(yytext);
+	return COMMENT;
 }
 
 {MULTILINE_COMMENT} {
 	countNewlineInComment(yytext);
+	return COMMENT;
 }
 
 {BREAK} {
-	
+	return BREAK;
 }
 
 {CASE} {
-	
+	return CASE;
 }
 
 {CHAR} {
-	
+	return CHAR;
 }
 
 {CONTINUE} {
-	
+	return CONTINUE;
 }
 
 {DEFAULT} {
-	
+	return DEFAULT;
 }
 
 {DO} {
-	
+	return DO;
 }
 
 {DOUBLE} {
-	
+	return DOUBLE;
 }
 
 {ELSE} {
-	
+	return ELSE;
 }
 
 {FLOAT} {
-	
+	return FLOAT;
 }
 
 {FOR} {
-	
+	return FOR;
 }
 
 {IF} {
-	
+	return IF;
 }
 
 {INT} {
-	
+	return INT;
 }
 
 {RETURN} {
-	
+	return RETURN;
 }
 
 {SWITCH} {
-	
+	return SWITCH;
 }
 
 {WHILE} {
-	
+	return WHILE;
 }
 
 {VOID} {
-	
+	return VOID;
 }
 
 {ADDOP} {
-	
+	return ADDOP;
 }
 
 {MULOP} {
-	
+	return MULOP;
 }
 
 {RELOP} {
-	
+	return RELOP;
 }
 
 {INCOP} {
-	
+	return INCOP;
 }
 
 {LOGICOP} {
-	
+	return LOGICOP;
+}
+
+{BITOP} {
+	return BITOP;
 }
 
 {ASSIGNOP} {
-	
+	return ASSIGNOP;
 }
 
 {NOT} {
-	
+	return NOT;
 }
 
 {LPAREN} {
-	
+	return LPAREN;
 }
 
 {RPAREN} {
-	
+	return RPAREN;
 }
 
 {LCURL} {
-	
+	return LCURL;
 }
 
 {RCURL} {
-	
+	return RCURL;
 }
 
 {LTHIRD} {
-	
+	return LTHIRD;
 }
 
 {RTHIRD} {
-	
+	return RTHIRD;
 }
 
 {COMMA} {
-	
+	return COMMA;
 }
 
 {SEMICOLON} {
-	
+	return SEMICOLON;
 }
 
 {INTEGER_LITERAL} {
-	
+	SymbolInfo *x=new SymbolInfo(yytext,"CONST_INT");
+	yyval.symbol=x;
+	return CONST_INT;
 }
 
 {FLOAT_LITERAL} {
-	
+	SymbolInfo *x=new SymbolInfo(yytext,"CONST_FLOAT");
+	yyval.symbol=x;
+	return CONST_FLOAT;
 }
 
 {CHAR_LITERAL} {
-	
+	processChar(yytext);
 }
 
 {STRING} {
-	
+	processString(yytext);
 }
 
 {IDENTIFIER} {
-	
+	SymbolInfo *x=new SymbolInfo(yytext,"ID");
+	yyval.symbol=x;
+	return ID;
 }
 
 {TOO_MANY_DECIMAL_POINTS_ERROR} {
 	cnt_err++;
-	
 }
 
 {VARIABLE_NAMING_ERROR} {
 	cnt_err++;
-	
 }
 
 {MULTI_CHAR_ERROR} {
@@ -443,7 +462,6 @@ UNFINISHED_STRING (\"([^\"\n]|\\[\n])*)
 }
 
 {WHITESPACE} {
-	//printf("ignoring space\n");
 }
 
 

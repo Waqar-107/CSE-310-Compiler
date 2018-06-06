@@ -166,6 +166,7 @@ INCOP ("++"|"--")
 RELOP (">"|">="|"<"|"<="|"=="|"!=")
 ASSIGNOP ("=")
 LOGICOP ("&&"|"||")
+BITOP ("&"|"|"|"^"|"<<"|">>")
 NOT ("!")
 LPAREN ("(")
 RPAREN (")")
@@ -416,6 +417,11 @@ UNFINISHED_STRING_VAR_TWO \"({ANYTHING_EXCEPT_NEWLINE}|{ANYTHING_EXCEPT_SLASH_BE
 {LOGICOP} {
 	fprintf(tokenout,"<LOGICOP,%s>",yytext);
 	fprintf(logout,"Line no. %d: Token <LOGICOP> Lexeme %s found\n\n",line,yytext);
+}
+
+{BITOP} {
+	fprintf(tokenout,"<BITOP,%s>",yytext);
+	fprintf(logout,"Line no. %d: Token <BITOP> Lexeme %s found\n\n",line,yytext);
 }
 
 {ASSIGNOP} {

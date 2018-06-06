@@ -66,12 +66,11 @@ void countNewlineInComment(string s){
 /* ----------------------------------------------- */
 void processString(string s){
 	
-	temp_line=line;
 	string str="";
 
-	for(int i=0;i<s.length();i++){
+	for(int i=1;i<s.length()-1;i++){
 		if(i+1<s.length() && s[i]=='\\' && s[i+1]=='\n')
-			i++;
+			i++,line++;
 		else
 			str.push_back(s[i]);
 	}
@@ -340,26 +339,38 @@ UNFINISHED_STRING (\"([^\"\n]|\\[\n])*)
 }
 
 {ADDOP} {
+	SymbolInfo *x=new SymbolInfo(yytext,"ADDOP");
+	yyval.symbol=x;
 	return ADDOP;
 }
 
 {MULOP} {
+	SymbolInfo *x=new SymbolInfo(yytext,"MULOP");
+	yyval.symbol=x;
 	return MULOP;
 }
 
 {RELOP} {
+	SymbolInfo *x=new SymbolInfo(yytext,"RELOP");
+	yyval.symbol=x;
 	return RELOP;
 }
 
 {INCOP} {
+	SymbolInfo *x=new SymbolInfo(yytext,"INCOP");
+	yyval.symbol=x;
 	return INCOP;
 }
 
 {LOGICOP} {
+	SymbolInfo *x=new SymbolInfo(yytext,"LOGICOP");
+	yyval.symbol=x;
 	return LOGICOP;
 }
 
 {BITOP} {
+	SymbolInfo *x=new SymbolInfo(yytext,"BITOP");
+	yyval.symbol=x;
 	return BITOP;
 }
 

@@ -1,4 +1,8 @@
 lex.yy.c
 lex.yy.cc
+y.tab.h
+y.tab.c
+*.o
+*.output
 *.sh
 *.out

@@ -9,7 +9,11 @@
 
 using namespace std;
 
-int line=1, temp_line, cnt_err=0;
+int line=1;
+extern int cnt_err;
+
+extern FILE *logout;
+extern FILE *error;
 
 /* ----------------------------------------------- */
 void processChar(string s){
@@ -28,33 +32,31 @@ void processChar(string s){
 		
 		//char chr[]={'\n','\t','\\','\"','\a','\f','\r','\b','\v','\0'};
 
-		if(s[2]=='n') {ch='\n';fprintf(logout,"printing special char whose ascii is %d\n",(int)'\n');}
-		else if(s[2]=='t') {ch='\t';fprintf(logout,"printing special char whose ascii is %d\n",(int)'\t');}
-		else if(s[2]=='a') {ch='\a';fprintf(logout,"printing special char whose ascii is %d\n",(int)'\a');}
-		else if(s[2]=='f') {ch='\f';fprintf(logout,"printing special char whose ascii is %d\n",(int)'\f');}
-		else if(s[2]=='r') {ch='\r';fprintf(logout,"printing special char whose ascii is %d\n",(int)'\r');}
-		else if(s[2]=='b') {ch='\b';fprintf(logout,"printing special char whose ascii is %d\n",(int)'\b');}
-		else if(s[2]=='v') {ch='\v';fprintf(logout,"printing special char whose ascii is %d\n",(int)'\v');}
-		else if(s[2]=='0') {ch='\0';fprintf(logout,"printing special char whose ascii is %d\n",(int)'\0');}
+		if(s[2]=='n') {ch='\n';}
+		else if(s[2]=='t') {ch='\t';}
+		else if(s[2]=='a') {ch='\a';}
+		else if(s[2]=='f') {ch='\f';}
+		else if(s[2]=='r') {ch='\r';}
+		else if(s[2]=='b') {ch='\b';}
+		else if(s[2]=='v') {ch='\v';}
+		else if(s[2]=='0') {ch='\0';}
 
-		else if(s[2]=='\\') {ch='\\';fprintf(logout,"printing special char whose ascii is %d\n",(int)'\t');}
-		else if(s[2]=='\"') {ch='\"';fprintf(logout,"printing special char whose ascii is %d\n",(int)'\"');}
+		else if(s[2]=='\\') {ch='\\';}
+		else if(s[2]=='\"') {ch='\"';}
     		
 	}
 
 	ps.push_back(ch);
 
 	SymbolInfo *x=new SymbolInfo(ps.c_str(),"CONST_CHAR");
+	yylval.symbol=x;
 	ps.clear();
-
-	return CONST_CHAR;
 }
 /* ----------------------------------------------- */
 
 
 /* ----------------------------------------------- */
 void countNewlineInComment(string s){
-	temp_line=line;
 	for(int i=1;i<s.length();i++){
 		if(s[i]=='\n')
 			line++;
@@ -78,7 +80,7 @@ void processString(string s){
 	printf("%s\n",str.c_str());
 
 	SymbolInfo *x=new SymbolInfo(str.c_str(),"STRING");
-	return STRING;
+	yylval.symbol=x;
 }
 /* ----------------------------------------------- */
 
@@ -135,7 +137,8 @@ VOID "void"
 /* operators and punctuators */
 ADDOP [+-]
 MULOP [*/%]
-INCOP ("++"|"--")
+INCOP ("++")
+DECOP ("--")
 RELOP (">"|">="|"<"|"<="|"=="|"!=")
 ASSIGNOP ("=")
 LOGICOP ("&&"|"||")
@@ -340,37 +343,39 @@ UNFINISHED_STRING (\"([^\"\n]|\\[\n])*)
 
 {ADDOP} {
 	SymbolInfo *x=new SymbolInfo(yytext,"ADDOP");
-	yyval.symbol=x;
+	yylval.symbol=x;
 	return ADDOP;
 }
 
 {MULOP} {
 	SymbolInfo *x=new SymbolInfo(yytext,"MULOP");
-	yyval.symbol=x;
+	yylval.symbol=x;
 	return MULOP;
 }
 
 {RELOP} {
 	SymbolInfo *x=new SymbolInfo(yytext,"RELOP");
-	yyval.symbol=x;
+	yylval.symbol=x;
 	return RELOP;
 }
 
 {INCOP} {
-	SymbolInfo *x=new SymbolInfo(yytext,"INCOP");
-	yyval.symbol=x;
 	return INCOP;
+}
+
+{DECOP} {
+	return DECOP;
 }
 
 {LOGICOP} {
 	SymbolInfo *x=new SymbolInfo(yytext,"LOGICOP");
-	yyval.symbol=x;
+	yylval.symbol=x;
 	return LOGICOP;
 }
 
 {BITOP} {
 	SymbolInfo *x=new SymbolInfo(yytext,"BITOP");
-	yyval.symbol=x;
+	yylval.symbol=x;
 	return BITOP;
 }
 
@@ -416,56 +421,66 @@ UNFINISHED_STRING (\"([^\"\n]|\\[\n])*)
 
 {INTEGER_LITERAL} {
 	SymbolInfo *x=new SymbolInfo(yytext,"CONST_INT");
-	yyval.symbol=x;
+	yylval.symbol=x;
 	return CONST_INT;
 }
 
 {FLOAT_LITERAL} {
 	SymbolInfo *x=new SymbolInfo(yytext,"CONST_FLOAT");
-	yyval.symbol=x;
+	yylval.symbol=x;
 	return CONST_FLOAT;
 }
 
 {CHAR_LITERAL} {
 	processChar(yytext);
+	return CONST_CHAR;
 }
 
 {STRING} {
 	processString(yytext);
+	return STRING;
 }
 
 {IDENTIFIER} {
 	SymbolInfo *x=new SymbolInfo(yytext,"ID");
-	yyval.symbol=x;
+	yylval.symbol=x;
 	return ID;
 }
 
 {TOO_MANY_DECIMAL_POINTS_ERROR} {
 	cnt_err++;
+	fprintf(error,"lexical error at line. %d: too many decimal point error %s\n\n",line,yytext);
+
 }
 
 {VARIABLE_NAMING_ERROR} {
 	cnt_err++;
+	fprintf(error,"lexical error at line. %d: invalid prefix on ID or invalid suffix on number %s\n\n",line,yytext);
 }
 
 {MULTI_CHAR_ERROR} {
 	cnt_err++;
+	fprintf(error,"lexical error at line. %d: multi character constant error %s\n\n",line,yytext);
 }
 
 {ILL_FORMED_NUM} {
 	cnt_err++;
+	fprintf(error,"lexical error at line. %d: ill formed number: %s\n\n",line,yytext);
 }
 
 {UNFINISHED_CHAR_ERROR} {
 	cnt_err++;
+	fprintf(error,"lexical error at line. %d: unfinished character %s\n\n",line,yytext);
 }
 
 {UNFINISHED_COMMENT} {
 	cnt_err++;
+	fprintf(error,"lexical error at line. %d: unfinished comment found %s\n\n",line,yytext);
 }
 
 {UNFINISHED_STRING} {
 	cnt_err++;
+	fprintf(error,"lexical error at line %d: unfinished string found %s\n\n",line,yytext);
 }
 
 {NEWLINE} {

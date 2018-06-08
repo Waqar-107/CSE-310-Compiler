@@ -11,15 +11,19 @@ using namespace std;
 
 int yyparse(void);
 int yylex(void);
+
+int cnt_err;
+extern int line;
+
 extern FILE *yyin;
+FILE *logout,*error;
 
-SymbolTable *table;
+SymbolTable table(22);
 
-
-void yyerror(char *s) {
-	printf("%s\n",s);
+void yyerror(const char *s) {
+	cnt_err++;
+	fprintf(error,"Error \"%s\" Found on Line %d (Error no.%d)\n",s,line,cnt_err);
 }
-
 
 %}
 
@@ -27,140 +31,320 @@ void yyerror(char *s) {
 	SymbolInfo *symbol;
 }
 
-%token IF ELSE FOR WHILE DO WHILE INT CHAR FLOAT DOUBLE VOID RETURN
-SWITCH CASE DEFAULT CONTINUE ASSIGNOP NOT LPAREN RPAREN LCURL RCURL
-LTHIRD RTHIRD COMMA SEMICOLON COMMENT
+%token IF ELSE FOR WHILE DO BREAK INT CHAR FLOAT DOUBLE VOID RETURN
+SWITCH CASE DEFAULT CONTINUE ASSIGNOP INCOP DECOP NOT LPAREN RPAREN LCURL RCURL
+LTHIRD RTHIRD COMMA SEMICOLON COMMENT PRINTLN
 %token<symbol>CONST_INT
 %token<symbol>CONST_FLOAT
 %token<symbol>CONST_CHAR 
+%token<symbol>STRING
 %token<symbol>ID
 %token<symbol>ADDOP
 %token<symbol>MULOP
-%token<symbol>INCOP
 %token<symbol>RELOP
 %token<symbol>LOGICOP
 %token<symbol>BITOP
 
-%left 
-%right
+%type<symbol> type_specifier
 
-%nonassoc 
-
-
+%define parse.error verbose
 %%
 
 start : program
-	{
-		//write your code in this block in all the similar blocks below
-	}
+		{
+			fprintf(logout,"line no. %d: start : program\n\n",line);
+		}
 	;
 
-program : program unit 
+program : program unit
+		{
+			fprintf(logout,"line no. %d: program : program unit\n\n",line);
+		} 
 	| unit
+		{
+			fprintf(logout,"line no. %d: unit\n\n",line);
+		}
 	;
 	
 unit : var_declaration
+	  	{
+		   	fprintf(logout,"line no. %d: unit : var_declation\n\n",line);
+   	   	}
      | func_declaration
+     	{
+		   	fprintf(logout,"line no. %d: unit : func_declation\n\n",line);
+   	   	}
      | func_definition
+     	{
+		   	fprintf(logout,"line no. %d: unit : func_declation\n\n",line);
+   	   	}
      ;
      
 func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
+		{
+			fprintf(logout,"line no. %d: func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON\n\n",line);
+		}
 		| type_specifier ID LPAREN RPAREN SEMICOLON
+		{
+			fprintf(logout,"line no. %d: func_declaration : type_specifier ID LPAREN RPAREN SEMICOLON\n\n",line);
+		}
 		;
 		 
 func_definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement
+		{
+			fprintf(logout,"line no. %d: func_definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement\n\n",line);
+		}
 		| type_specifier ID LPAREN RPAREN compound_statement
+		{
+			fprintf(logout,"line no. %d: func_definition : type_specifier ID LPAREN RPAREN compound_statement\n\n",line);
+		}
  		;				
 
 
-parameter_list  : parameter_list COMMA type_specifier ID
+parameter_list : parameter_list COMMA type_specifier ID
+		{
+			fprintf(logout,"line no. %d: parameter_list : parameter_list COMMA type_specifier ID\n\n",line);
+		}
 		| parameter_list COMMA type_specifier
+		{
+			fprintf(logout,"line no. %d: parameter_list : parameter_list COMMA type_specifier\n\n",line);
+		}
  		| type_specifier ID
+ 		{
+			fprintf(logout,"line no. %d: parameter_list : type_specifier ID\n\n",line);
+		}
 		| type_specifier
+		{
+			fprintf(logout,"line no. %d: parameter_list : type_specifier\n\n",line);
+		}
  		;
 
  		
 compound_statement : LCURL statements RCURL
+		{
+			fprintf(logout,"line no. %d: compound_statement : LCURL statements RCURL\n\n",line);
+		}
  		    | LCURL RCURL
+ 		{
+			fprintf(logout,"line no. %d: compound_statement : LCURL RCURL\n\n",line);
+		}
  		    ;
  		    
 var_declaration : type_specifier declaration_list SEMICOLON
+		{
+			fprintf(logout,"line no. %d: var_declaration : type_specifier declaration_list SEMICOLON\n\n",line);
+		}
  		 ;
  		 
-type_specifier	: INT
+type_specifier : INT
+		{
+			fprintf(logout,"line no. %d: type_specifier : INT \n\n",line);
+		}
  		| FLOAT
+ 		{
+			fprintf(logout,"line no. %d: type_specifier : FLOAT\n\n",line);
+		}
  		| VOID
+ 		{
+			fprintf(logout,"line no. %d: type_specifier : VOID\n\n",line);
+		}
  		;
  		
 declaration_list : declaration_list COMMA ID
+		{
+			fprintf(logout,"line no. %d: declaration_list : declaration_list COMMA ID\n\n",line);
+		}
  		  | declaration_list COMMA ID LTHIRD CONST_INT RTHIRD
+ 		{
+ 			fprintf(logout,"line no. %d: declaration_list : declaration_list COMMA ID LTHIRD CONST_INT RTHIRD\n\n",line);
+ 		}
  		  | ID
+ 		{
+ 			fprintf(logout,"line no. %d: declaration_list : ID\n\n",line);
+ 		}
  		  | ID LTHIRD CONST_INT RTHIRD
+ 		{
+ 			fprintf(logout,"line no. %d: declaration_list : ID LTHIRD CONST_INT RTHIRD\n\n",line);
+ 		}
  		  ;
  		  
 statements : statement
+		{
+			fprintf(logout,"line no. %d: statements : statement\n\n",line);
+		}
 	   | statements statement
+	    {
+			fprintf(logout,"line no. %d: statements : statements statement\n\n",line);
+		}
 	   ;
 	   
 statement : var_declaration
+		{
+			fprintf(logout,"line no. %d: statement : var_declaration\n\n",line);
+		}
 	  | expression_statement
+	  	{
+			fprintf(logout,"line no. %d: statement : expression_statement\n\n",line);
+		}
 	  | compound_statement
+	  	{
+			fprintf(logout,"line no. %d: statement : compound_statement\n\n",line);
+		}
 	  | FOR LPAREN expression_statement expression_statement expression RPAREN statement
+	  	{
+			fprintf(logout,"line no. %d: statement : FOR LPAREN expression_statement expression_statement expression RPAREN statement\n\n",line);
+		}
 	  | IF LPAREN expression RPAREN statement
+	  	{
+			fprintf(logout,"line no. %d: statement : IF LPAREN expression RPAREN statement\n\n",line);
+		}
 	  | IF LPAREN expression RPAREN statement ELSE statement
+	  	{
+			fprintf(logout,"line no. %d: statement : IF LPAREN expression RPAREN statement ELSE statement\n\n",line);
+		}
 	  | WHILE LPAREN expression RPAREN statement
+		{
+			fprintf(logout,"line no. %d: statement : WHILE LPAREN expression RPAREN statement\n\n",line);
+		}
 	  | PRINTLN LPAREN ID RPAREN SEMICOLON
+	  	{
+			fprintf(logout,"line no. %d: statement : PRINTLN LPAREN ID RPAREN SEMICOLON\n\n",line);
+		}
 	  | RETURN expression SEMICOLON
+	    {
+			fprintf(logout,"line no. %d: statement : RETURN expression SEMICOLON\n\n",line);
+		}
 	  ;
 	  
-expression_statement 	: SEMICOLON			
-			| expression SEMICOLON 
+expression_statement : SEMICOLON
+		{
+			fprintf(logout,"line no. %d: expression_statement : SEMICOLON\n\n",line);
+		}			
+			| expression SEMICOLON
+		{
+			fprintf(logout,"line no. %d: expression_statement : expression SEMICOLON\n\n",line);
+		} 
 			;
 	  
-variable : ID 		
+variable : ID
+		{
+			fprintf(logout,"line no. %d: variable : ID\n\n",line);
+		} 		
 	 | ID LTHIRD expression RTHIRD 
+		{
+			fprintf(logout,"line no. %d: variable : ID LTHIRD expression RTHIRD\n\n",line);
+		}
 	 ;
 	 
- expression : logic_expression	
+ expression : logic_expression
+		{
+			fprintf(logout,"line no. %d: expression : logic_expression\n\n",line);
+		}	
 	   | variable ASSIGNOP logic_expression 	
+		{
+			fprintf(logout,"line no. %d: expression : variable ASSIGNOP logic_expression\n\n",line);
+		}
 	   ;
 			
-logic_expression : rel_expression 	
+logic_expression : rel_expression
+		{
+			fprintf(logout,"line no. %d: logic_expression : rel_expression\n\n",line);
+		} 	
 		 | rel_expression LOGICOP rel_expression 	
+		{
+			fprintf(logout,"line no. %d: logic_expression : rel_expression LOGICOP rel_expression\n\n",line);
+		}
 		 ;
 			
-rel_expression	: simple_expression 
+rel_expression : simple_expression 
+		{
+			fprintf(logout,"line no. %d: rel_expression : simple_expression\n\n",line);
+		}
 		| simple_expression RELOP simple_expression	
+		{
+			fprintf(logout,"line no. %d: rel_expression : simple_expression RELOP simple_expression	\n\n",line);
+		}
 		;
 				
-simple_expression : term 
-		  | simple_expression ADDOP term 
+simple_expression : term
+		{
+			fprintf(logout,"line no. %d: simple_expression : term\n\n",line);
+		} 
+		  | simple_expression ADDOP term
+		{
+			fprintf(logout,"line no. %d: simple_expression : simple_expression ADDOP term\n\n",line);
+		} 
 		  ;
 					
 term :	unary_expression
+		{
+			fprintf(logout,"line no. %d: term : unary_expression\n\n",line);
+		}
      |  term MULOP unary_expression
+		{
+			fprintf(logout,"line no. %d: term : term MULOP unary_expression\n\n",line);
+		}
      ;
 
-unary_expression : ADDOP unary_expression  
+unary_expression : ADDOP unary_expression
+		{
+			fprintf(logout,"line no. %d: unary_expression : ADDOP unary_expression\n\n",line);
+		}  
 		 | NOT unary_expression 
+		{
+			fprintf(logout,"line no. %d: unary_expression NOT unary_expression\n\n",line);
+		}
 		 | factor 
+		{
+			fprintf(logout,"line no. %d: unary_expression factor\n\n",line);
+		}
 		 ;
 	
-factor	: variable 
+factor	: variable
+		{
+			fprintf(logout,"line no. %d: factor	: variable\n\n",line);
+		} 
 	| ID LPAREN argument_list RPAREN
+		{
+			fprintf(logout,"line no. %d: factor	: ID LPAREN argument_list RPAREN\n\n",line);
+		}
 	| LPAREN expression RPAREN
-	| CONST_INT 
+		{
+			fprintf(logout,"line no. %d: factor	: LPAREN expression RPAREN\n\n",line);
+		}
+	| CONST_INT
+		{
+			fprintf(logout,"line no. %d: factor	: CONST_INT\n\n",line);
+		} 
 	| CONST_FLOAT
-	| variable INCOP 
+		{
+			fprintf(logout,"line no. %d: factor	: CONST_FLOAT\n\n",line);
+		}
+	| variable INCOP
+		{
+			fprintf(logout,"line no. %d: factor	: variable INCOP\n\n",line);
+		} 
 	| variable DECOP
+		{
+			fprintf(logout,"line no. %d: factor	: variable DECOP\n\n",line);
+		}
 	;
 	
 argument_list : arguments
+		{
+			fprintf(logout,"line no. %d: argument_list : arguments\n\n",line);
+		}
 			  |
 			  ;
 	
 arguments : arguments COMMA logic_expression
+		{
+			fprintf(logout,"line no. %d: arguments : arguments COMMA logic_expression\n\n",line);
+		}
 	      | logic_expression
+	    {
+			fprintf(logout,"line no. %d: arguments : logic_expression\n\n",line);
+		}
 	      ;
  
 
@@ -168,27 +352,27 @@ arguments : arguments COMMA logic_expression
 int main(int argc,char *argv[])
 {
 
-	if((fp=fopen(argv[1],"r"))==NULL)
+	if((yyin=fopen(argv[1],"r"))==NULL)
 	{
 		printf("Cannot Open Input File.\n");
 		exit(1);
 	}
 
-	fp2= fopen(argv[2],"w");
-	fclose(fp2);
-	fp3= fopen(argv[3],"w");
-	fclose(fp3);
-	
-	fp2= fopen(argv[2],"a");
-	fp3= fopen(argv[3],"a");
-	
+	logout= fopen(argv[2],"w");
+	fclose(logout);
 
-	yyin=fp;
+	error= fopen(argv[3],"w");
+	fclose(error);
+	
+	logout= fopen(argv[2],"a");
+	error= fopen(argv[3],"a");
+	
+	cnt_err=0;
 	yyparse();
 	
 
-	fclose(fp2);
-	fclose(fp3);
+	fclose(logout);
+	fclose(error);
 	
 	return 0;
 }

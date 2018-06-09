@@ -21,6 +21,14 @@ public:
 		next = 0;
 	}
 
+	SymbolInfo(string type) {
+        this->type=type;
+        this->name="";
+
+        prev = 0;
+		next = 0;
+	}
+
 	SymbolInfo(string name, string type) {
 		this->name = name;
 		this->type = type;
@@ -100,11 +108,11 @@ public:
 		return h%n;
 	}
 
-	bool Insert(string name, string type,FILE *logout)
+	bool Insert(string name, string type)
 	{
 		if (lookUp(name) != 0)
 		{
-			fprintf(logout,"'%s' already Exists In The Current ScopeTable\n",name.c_str());
+			//fprintf(logout,"'%s' already Exists In The Current ScopeTable\n",name.c_str());
 			return  false;
 		}
 
@@ -185,7 +193,7 @@ public:
 				continue;
 
 			fprintf(logout, "	%d  --> ", i);
-			
+
 			temp = bucket[i];
 			while (temp)
 			{
@@ -249,7 +257,7 @@ public:
 	{
 		id++;
 		ScopeTable *newScopeTable = new ScopeTable(n, id);
-		
+
 		if (!v.empty())
 			newScopeTable->setParentScopeTable(v.back());
 
@@ -271,15 +279,15 @@ public:
 		delete dell;
 	}
 
-	bool Insert(string name, string type,FILE *logout)
+	bool Insert(string name, string type)
 	{
 		if (current)
-			return current->Insert(name, type,logout);
+			return current->Insert(name, type);
 
 		else
 		{
 			EnterScope();
-			return current->Insert(name, type,logout);
+			return current->Insert(name, type);
 		}
 	}
 
@@ -315,12 +323,12 @@ public:
 	void PrintAllScopeTable(FILE *logout)
 	{
 		ScopeTable *temp = current;
-		printf("------------------------------------------------------------\n");
+		fprintf(logout,"------------------------------------------------------------\n");
 		while (temp)
 		{
 			temp->printScopeTable(logout);
 			temp = temp->getParentScopeTable();
 		}
-		printf("------------------------------------------------------------\n");
+		fprintf(logout,"------------------------------------------------------------\n");
 	}
 };

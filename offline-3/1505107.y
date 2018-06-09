@@ -1,19 +1,20 @@
 %{
 #include<iostream>
+#include<cstdio>
 #include<cstdlib>
 #include<cstring>
 #include<cmath>
+#include<string>
 #include "1505107_SymbolTable.h"
-
-#define YYSTYPE SymbolInfo*
 
 using namespace std;
 
 int yyparse(void);
 int yylex(void);
 
-int cnt_err;
+int cnt_err, semanticErr=0;
 extern int line;
+string variable_type;
 
 extern FILE *yyin;
 FILE *logout,*error;
@@ -22,7 +23,7 @@ SymbolTable table(22);
 
 void yyerror(const char *s) {
 	cnt_err++;
-	fprintf(error,"Error \"%s\" Found on Line %d (Error no.%d)\n",s,line,cnt_err);
+	fprintf(error,"syntax error \"%s\" Found on Line %d (Error no.%d)\n",s,line,cnt_err);
 }
 
 %}
@@ -31,9 +32,7 @@ void yyerror(const char *s) {
 	SymbolInfo *symbol;
 }
 
-%token IF ELSE FOR WHILE DO BREAK INT CHAR FLOAT DOUBLE VOID RETURN
-SWITCH CASE DEFAULT CONTINUE ASSIGNOP INCOP DECOP NOT LPAREN RPAREN LCURL RCURL
-LTHIRD RTHIRD COMMA SEMICOLON COMMENT PRINTLN
+%token IF ELSE FOR WHILE DO BREAK INT CHAR FLOAT DOUBLE VOID RETURN SWITCH CASE DEFAULT CONTINUE ASSIGNOP INCOP DECOP NOT LPAREN RPAREN LCURL RCURL LTHIRD RTHIRD COMMA SEMICOLON COMMENT PRINTLN
 %token<symbol>CONST_INT
 %token<symbol>CONST_FLOAT
 %token<symbol>CONST_CHAR 
@@ -45,7 +44,7 @@ LTHIRD RTHIRD COMMA SEMICOLON COMMENT PRINTLN
 %token<symbol>LOGICOP
 %token<symbol>BITOP
 
-%type<symbol> type_specifier
+%type<symbol>type_specifier
 
 %define parse.error verbose
 %%
@@ -138,29 +137,57 @@ var_declaration : type_specifier declaration_list SEMICOLON
  		 
 type_specifier : INT
 		{
-			fprintf(logout,"line no. %d: type_specifier : INT \n\n",line);
+			fprintf(logout,"line no. %d: type_specifier : INT \n",line);
+			variable_type = "INT";
+			SymbolInfo *x = new SymbolInfo("INT");
+			$$ = x;
+			fprintf(logout,"%s\n\n",$$->getType());
 		}
  		| FLOAT
  		{
 			fprintf(logout,"line no. %d: type_specifier : FLOAT\n\n",line);
+			variable_type="FLOAT";
 		}
  		| VOID
  		{
 			fprintf(logout,"line no. %d: type_specifier : VOID\n\n",line);
+			variable_type="VOID";
 		}
  		;
  		
 declaration_list : declaration_list COMMA ID
 		{
-			fprintf(logout,"line no. %d: declaration_list : declaration_list COMMA ID\n\n",line);
+			fprintf(logout,"line no. %d: declaration_list : declaration_list COMMA ID\n",line);
+			fprintf(logout,"%s %s\n\n",$3->getName().c_str(),$3->getName().c_str());
 		}
  		  | declaration_list COMMA ID LTHIRD CONST_INT RTHIRD
  		{
  			fprintf(logout,"line no. %d: declaration_list : declaration_list COMMA ID LTHIRD CONST_INT RTHIRD\n\n",line);
+ 			//fprintf(logout,"%s[%s]\n\n",$3->getName().c_str(),$5->getName());
  		}
  		  | ID
  		{
- 			fprintf(logout,"line no. %d: declaration_list : ID\n\n",line);
+ 			fprintf(logout,"line no. %d: declaration_list : ID\n",line);
+ 			fprintf(logout,"%s\n\n",$1->getName().c_str());
+
+ 			if(variable_type=="VOID") {
+ 				fprintf(error,"semantic error found at line %d: variable cannot be of type void\n\n",line);
+ 				semanticErr++;
+ 			}
+
+ 			else {
+ 				//insert in SymbolTable directly if not declared before
+ 				SymbolInfo *x=table.lookUp($1->getName());
+ 				if(x) {
+ 					fprintf(error,"semantic error found at line %d: variable %s declared before\n\n",line,$1->getName().c_str());
+ 					semanticErr++;
+ 				}
+
+ 				else {
+ 					table.Insert($1->getName(),$1->getType());
+ 				}
+ 			}
+ 			
  		}
  		  | ID LTHIRD CONST_INT RTHIRD
  		{
@@ -369,7 +396,11 @@ int main(int argc,char *argv[])
 	
 	cnt_err=0;
 	yyparse();
-	
+
+	//print the SymbolTable and other credentials
+	table.PrintAllScopeTable(logout);
+	fprintf(logout,"total lines read: %d\n",line-1);
+	fprintf(logout,"total errors encountered: %d",cnt_err+semanticErr);
 
 	fclose(logout);
 	fclose(error);

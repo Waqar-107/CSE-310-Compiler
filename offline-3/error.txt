@@ -1,0 +1,2 @@
+semantic error found at line 15: variable a declared before
+

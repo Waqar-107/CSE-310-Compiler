@@ -12,11 +12,17 @@ typedef unsigned long long int ull;
 
 class SymbolInfo
 {
-	string name, type;
+	string name, type, return_type;
 	SymbolInfo *prev, *next;
 
 public:
+    int sz;
+    vector<SymbolInfo*> edge;
 	SymbolInfo() {
+        this->type="";
+        this->name="";
+        this->return_type="";
+
 		prev = 0;
 		next = 0;
 	}
@@ -24,6 +30,7 @@ public:
 	SymbolInfo(string type) {
         this->type=type;
         this->name="";
+        this->return_type="";
 
         prev = 0;
 		next = 0;
@@ -51,6 +58,14 @@ public:
 
 	void setType(string type) {
 		this->type = type;
+	}
+
+	string getReturnType() {
+		return return_type;
+	}
+
+	void setReturnType(string rtype) {
+		this->return_type = rtype;
 	}
 
 	SymbolInfo *getPrev() {

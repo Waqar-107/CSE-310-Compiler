@@ -1,3 +1,5 @@
+int f,w;
+int x;
 int func(int a){
 	return a;
 }

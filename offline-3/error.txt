@@ -1,2 +1,2 @@
-semantic error found at line 6: variable c declared before
+semantic error found at line 8: variable c declared before
 

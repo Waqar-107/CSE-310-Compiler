@@ -16,9 +16,12 @@ class SymbolInfo
 	string variable_type;
 	SymbolInfo *prev, *next;
 
+
 public:
     int sz;
     vector<SymbolInfo*> edge;
+    int *ivalue;float *fvalue; char *cvalue;
+
 	SymbolInfo() {
         this->type="";
         this->name="";
@@ -83,6 +86,15 @@ public:
 
 	void setNext(SymbolInfo *x) {
 		next = x;
+	}
+
+	void allocateMemory(string choice, int n) {
+        if(choice=="int")
+            ivalue=new int[n];
+        else if(choice=="float")
+            fvalue=new float[n];
+        else if(choice=="char")
+            cvalue=new char[n];
 	}
 };
 

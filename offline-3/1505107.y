@@ -4,9 +4,10 @@
 #include<cstdlib>
 #include<cstring>
 #include<cmath>
+#include <limits>
 #include<string>
 #include<vector>
-#include<bits/stdc++.h>
+#include<algorithm>
 #include "1505107_SymbolTable.h"
 
 using namespace std;
@@ -62,8 +63,7 @@ string stoi(int n){
 %token<symbol>LOGICOP
 %token<symbol>BITOP
 
-%type<symbol>type_specifier parameter_list declaration_list var_declaration unit func_declaration statement statements
-
+%type<symbol>type_specifier parameter_list declaration_list var_declaration unit func_declaration statement statements variable expression factor arguments argument_list expression_statement unary_expression simple_expression logic_expression rel_expression term
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
 %define parse.error verbose
@@ -229,11 +229,19 @@ parameter_list : parameter_list COMMA type_specifier ID
  		
 compound_statement : LCURL statements RCURL
 		{
-			fprintf(logout,"line no. %d: compound_statement : LCURL statements RCURL\n\n",line);
+			fprintf(logout,"line no. %d: compound_statement : LCURL statements RCURL\n",line);
+			fprintf(logout,"{%s}\n\n",$2->getName().c_str());
+
+			SymbolInfo *newSymbol=new SymbolInfo("{"+$2->getName()+"}",compound_statement);
+			$$=newSymbol;
 		}
  		    | LCURL RCURL
  		{
-			fprintf(logout,"line no. %d: compound_statement : LCURL RCURL\n\n",line);
+			fprintf(logout,"line no. %d: compound_statement : LCURL RCURL\n",line);
+			fprintf(logout,"{}");
+
+			SymbolInfo *newSymbol=new SymbolInfo("{}",compound_statement);
+			$$=newSymbol;
 		}
  		    ;
  		    
@@ -362,8 +370,8 @@ declaration_list : declaration_list COMMA ID
  				}
 
  				else {
- 					table.Insert($3->getName(),variable_type);
- 					x=table.lookUp($3->getName());
+ 					//table.Insert($3->getName(),variable_type);
+ 					//x=table.lookUp($3->getName());
  					x->sz=atoi($5->getName().c_str());
  				}
  			}
@@ -394,7 +402,7 @@ declaration_list : declaration_list COMMA ID
  				}
 
  				else {
- 					table.Insert($1->getName(),$1->getType());
+ 					//table.Insert($1->getName(),$1->getType());
  					$$->edge.push_back($1);
  				}
  			}
@@ -452,6 +460,8 @@ statements : statement
 			for(int i=0;i<$1->edge.size();i++){
 				fprintf(logout,"%s\n",$1->edge[i]->getName().c_str());
 			}
+
+			fprintf(logout,"\n");
 		}
 	   ;
 	   
@@ -499,51 +509,69 @@ statement : var_declaration
 	  
 expression_statement : SEMICOLON
 		{
-			fprintf(logout,"line no. %d: expression_statement : SEMICOLON\n\n",line);
+			fprintf(logout,"line no. %d: expression_statement : SEMICOLON\n",line);
+			fprintf(logic_expression,";\n\n");
+
+			SymbolInfo *newSymbol=new SymbolInfo(";","expression_statement");
+			$$=newSymbol;
 		}			
 			| expression SEMICOLON
 		{
-			fprintf(logout,"line no. %d: expression_statement : expression SEMICOLON\n\n",line);
+			fprintf(logout,"line no. %d: expression_statement : expression SEMICOLON\n",line);
+			fprintf(logout,"%s;\n\n",$1->getName().c_str());
+
+			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+";","expression_statement");
+			$$=newSymbol;
 		} 
 			;
 	  
 variable : ID
 		{
 			fprintf(logout,"line no. %d: variable : ID\n",line);
+			fprintf(logout,"%s\n\n",$1->getName());
 
-			SymbolInfo *newSymbol=new SymbolInfo($1->getName(),"variable");
-			$$=newSymbol;
-
-			fprintf(logout,"%s\n\n",$$->getName());
+			$$=$1;
 		} 		
 	 | ID LTHIRD expression RTHIRD 
 		{
 			fprintf(logout,"line no. %d: variable : ID LTHIRD expression RTHIRD\n",line);
+			fprintf(logout,"%s[%d]\n\n",$1->getName().c_str(),$3->getName().c_str());
 
-			SymbolInfo *newSymbol=new SymbolInfo($1->getName(),"variable");
+			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+"["+$3->getName()+"]","variable");
 			$$=newSymbol;
-
-			//fprintf(logout,"%s[%d]\n\n",$$->getName());
 		}
 	 ;
 	 
  expression : logic_expression
 		{
-			fprintf(logout,"line no. %d: expression : logic_expression\n\n",line);
+			fprintf(logout,"line no. %d: expression : logic_expression\n",line);
+			fprintf(logout,"%s\n\n",$1->getName());
+
+			$$=$1;
 		}	
 	   | variable ASSIGNOP logic_expression 	
-		{
-			fprintf(logout,"line no. %d: expression : variable ASSIGNOP logic_expression\n\n",line);
+		{//semantic error check dite hbe
+			fprintf(logout,"line no. %d: expression : variable ASSIGNOP logic_expression\n",line);
+			fprintf(logout,"%s=%s\n\n",$1->getName().c_str(),$3->getName());
+
+			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+"="+$3->getName(),"expression");
+			$$=newSymbol;
 		}
 	   ;
 			
 logic_expression : rel_expression
 		{
-			fprintf(logout,"line no. %d: logic_expression : rel_expression\n\n",line);
+			fprintf(logout,"line no. %d: logic_expression : rel_expression\n",line);
+			fprintf(logout,"%s\n\n",$1->getName().c_str());
+			$$=$1;
 		} 	
 		 | rel_expression LOGICOP rel_expression 	
 		{
-			fprintf(logout,"line no. %d: logic_expression : rel_expression LOGICOP rel_expression\n\n",line);
+			fprintf(logout,"line no. %d: logic_expression : rel_expression LOGICOP rel_expression\n",line);
+			fprintf(logout,"%s%s%s\n\n",$1->getName().c_str(),$2->getName().c_str(),$3->getName().c_str());
+
+			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+$2->getName()+$3->getName(),"logic_expression");
+			$$=newSymbol;
 		}
 		 ;
 			
@@ -559,35 +587,62 @@ rel_expression : simple_expression
 				
 simple_expression : term
 		{
-			fprintf(logout,"line no. %d: simple_expression : term\n\n",line);
+			fprintf(logout,"line no. %d: simple_expression : term\n",line);
+			fprintf(logout,"%s\n\n",$1->getName().c_str());
+
+			SymbolInfo *newSymbol=new SymbolInfo($1->getName(),"simple_expression");
+			$$=newSymbol;
 		} 
 		  | simple_expression ADDOP term
 		{
-			fprintf(logout,"line no. %d: simple_expression : simple_expression ADDOP term\n\n",line);
+			fprintf(logout,"line no. %d: simple_expression : simple_expression ADDOP term\n",line);
+			fprintf(logout,"%s%s%s\n\n",$1->getName().c_str(),$2->getName().c_str(),$3->getName().c_str());
+
+			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+$2->getName()+$3->getName(),"simple_expression");
+			$$=newSymbol;
 		} 
 		  ;
 					
 term :	unary_expression
 		{
-			fprintf(logout,"line no. %d: term : unary_expression\n\n",line);
+			fprintf(logout,"line no. %d: term : unary_expression\n",line);
+			fprintf(logout,"%s\n\n",$1->getName().c_str());
+
+			SymbolInfo *newSymbol=new SymbolInfo($1->getName(),"term");
+			$$=newSymbol;
 		}
      |  term MULOP unary_expression
 		{
-			fprintf(logout,"line no. %d: term : term MULOP unary_expression\n\n",line);
+			fprintf(logout,"line no. %d: term : term MULOP unary_expression\n",line);
+			fprintf(logout,"%s%s%s\n\n",$1->getName().c_str(),$2->getName().c_str(),$3->getName().c_str());
+
+			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+$2->getName()+$3->getName(),"term");
+			$$=newSymbol;
 		}
      ;
 
 unary_expression : ADDOP unary_expression
 		{
-			fprintf(logout,"line no. %d: unary_expression : ADDOP unary_expression\n\n",line);
+			fprintf(logout,"line no. %d: unary_expression : ADDOP unary_expression\n",line);
+			fprintf(logout,"%s%s\n\n",$1->getName().c_str(),$2->getName().c_str());
+
+			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+$2->getName(),"unary_expression");
+			$$=newSymbol;
 		}  
 		 | NOT unary_expression 
 		{
-			fprintf(logout,"line no. %d: unary_expression NOT unary_expression\n\n",line);
+			fprintf(logout,"line no. %d: unary_expression NOT unary_expression\n",line);
+			fprintf(logout,"!%s\n\n",$2->getName().c_str());
+
+			SymbolInfo *newSymbol=new SymbolInfo("!"+$2->getName(),"unary_expression");
+			$$=newSymbol;
 		}
 		 | factor 
 		{
-			fprintf(logout,"line no. %d: unary_expression factor\n\n",line);
+			fprintf(logout,"line no. %d: unary_expression factor\n",line);
+			fprintf(logout,"%s\n\n",$1->getName().c_str());
+
+			$$=$1;
 		}
 		 ;
 	
@@ -599,13 +654,19 @@ factor	: variable
 		} 
 	| ID LPAREN argument_list RPAREN
 		{
-			fprintf(logout,"line no. %d: factor	: ID LPAREN argument_list RPAREN\n\n",line);
+			fprintf(logout,"line no. %d: factor	: ID LPAREN argument_list RPAREN\n",line);
+			fprintf(logout,"%s(%s)\n\n",$1->getName().c_str(),$3->getName().c_str());
+
+			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+"("+$3->getName()+")","factor");
+			$$=newSymbol;
 		}
 	| LPAREN expression RPAREN
 		{
 			fprintf(logout,"line no. %d: factor	: LPAREN expression RPAREN\n",line);
 			fprintf(logout,"(%s)\n\n",$2->getName().c_str());
-			$$=$2;
+			
+			SymbolInfo *newSymbol=new SymbolInfo("("+$2->getName()+")","factor");
+			$$=newSymbol;
 		}
 	| CONST_INT
 		{
@@ -615,23 +676,35 @@ factor	: variable
 		} 
 	| CONST_FLOAT
 		{
-			fprintf(logout,"line no. %d: factor	: CONST_FLOAT\n\n",line);
+			fprintf(logout,"line no. %d: factor	: CONST_FLOAT\n",line);
 			fprintf(logout,"%s\n\n",$1->getName());
 			$$=$1;
 		}
 	| variable INCOP
 		{
-			fprintf(logout,"line no. %d: factor	: variable INCOP\n\n",line);
+			fprintf(logout,"line no. %d: factor	: variable INCOP\n",line);
+			fprintf(logout,"%s++",$1->getName().c_str());
+
+			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+"++","factor");
+			$$=newSymbol;
 		} 
 	| variable DECOP
 		{
-			fprintf(logout,"line no. %d: factor	: variable DECOP\n\n",line);
+			fprintf(logout,"line no. %d: factor	: variable DECOP\n",line);
+			fprintf(logout,"%s--",$1->getName().c_str());
+
+			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+"--","factor");
+			$$=newSymbol;
 		}
 	;
 	
 argument_list : arguments
 		{
-			fprintf(logout,"line no. %d: argument_list : arguments\n\n",line);
+			fprintf(logout,"line no. %d: argument_list : arguments\n",line);
+			fprintf(logout,"%s\n",$1->getName().c_str());
+
+			SymbolInfo *newSymbol=new SymbolInfo($1->getName(),"argument_list");
+			$$=newSymbol;
 		}
 	|
 			  ;
@@ -639,13 +712,20 @@ argument_list : arguments
 arguments : arguments COMMA logic_expression
 		{
 			fprintf(logout,"line no. %d: arguments : arguments COMMA logic_expression\n\n",line);
+			fprintf(logout,"%s,%s\n\n",$1->getName().c_str(),$3->getName().c_str());
+
+			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+","+$3->getName(),"arguments");
+			$$=newSymbol;
 		}
 	      | logic_expression
 	    {
-			fprintf(logout,"line no. %d: arguments : logic_expression\n\n",line);
+			fprintf(logout,"line no. %d: arguments : logic_expression\n",line);
+			fprintf(logout,"%s\n\n",$1->getName().c_str());
+
+			SymbolInfo *newSymbol=new SymbolInfo($1->getName(),"arguments");
+			$$=newSymbol;
 		}
 	      ;
- 
 
 %%
 int main(int argc,char *argv[])

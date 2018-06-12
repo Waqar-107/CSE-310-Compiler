@@ -1,2 +1,1 @@
-semantic error found at line 15: variable a declared before
-
+syntax error "syntax error, unexpected CONST_FLOAT, expecting CONST_INT" Found on Line 1 (Error no.1)

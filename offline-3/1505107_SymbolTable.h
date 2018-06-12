@@ -13,6 +13,7 @@ typedef unsigned long long int ull;
 class SymbolInfo
 {
 	string name, type, return_type;
+	string variable_type;
 	SymbolInfo *prev, *next;
 
 public:

@@ -27,6 +27,7 @@ SymbolTable table(22);
 string codes;
 vector<string> code_list;
 vector<string> statement_list;
+vector<SymbolInfo*> params;
 
 void yyerror(const char *s) {
 	cnt_err++;
@@ -45,6 +46,23 @@ string stoi(int n){
 	return temp;
 }
 
+void fillScopeWithParams(){
+	for(int i=0;i<params.size();i++)
+	{
+		if(!table.Insert(params[i]->getName(),"ID",logout)){
+			semanticErr++;
+			fprintf(logout,"semantic error found on line %d: id already declared\n\n",line);
+		}
+
+		else{
+			SymbolInfo *temp=table.lookUp(params[i]->getName());
+			temp->setVariableType(params[i]->getVariableType());
+			temp->sz=params[i]->sz;
+		}
+	}
+
+	params.clear();
+}
 
 %}
 
@@ -130,7 +148,7 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 			fprintf(logout,"line no. %d: func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON\n",line);
 			
 			//int foo(int a,float b);
-			table.Insert($2->getName(),"function",logout);
+			table.Insert($2->getName(),"ID",logout);
 			
 			SymbolInfo *x=table.lookUp($2->getName());
 			x->setReturnType($1->getType());
@@ -167,7 +185,7 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 		}
 		;
 		 
-func_definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement
+func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScope(logout);fillScopeWithParams();} compound_statement
 		{
 			fprintf(logout,"line no. %d: func_definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement\n",line);
 
@@ -178,19 +196,21 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN compound_statem
 			}
 
 			codes+=")";
-			codes+=$6->getName();
+			codes+=$7->getName();
 
 			fprintf(logout,"%s\n\n",codes.c_str());
 
 			SymbolInfo *newSymbol=new SymbolInfo(codes,"func_definition");
 			$$=newSymbol;
+
+			
 		}
-		| type_specifier ID LPAREN RPAREN compound_statement
+		| type_specifier ID LPAREN RPAREN{table.EnterScope(logout);} compound_statement
 		{
 			fprintf(logout,"line no. %d: func_definition : type_specifier ID LPAREN RPAREN compound_statement\n",line);
 
 			codes=$1->getName();
-			codes+=$2->getName();codes+="()";codes+=$5->getName();
+			codes+=$2->getName();codes+="()";codes+=$6->getName();
 
 			fprintf(logout,"%s\n\n",codes.c_str());
 
@@ -212,6 +232,21 @@ parameter_list : parameter_list COMMA type_specifier ID
 			}
 
 			fprintf(logout,"\n\n");
+
+			//--------------------------------------------------------------------
+			//insert in the current scope, already a new scope has been created
+			//we insert in params for now, later we will insert them in the table
+			SymbolInfo *temp=new SymbolInfo($4->getName(),"ID");
+
+			int n;
+			temp->sz=$4->sz;
+
+			temp->setVariableType($3->getType());
+
+			n=max(1,temp->sz);
+			temp->allocateMemory($3->getType(),n);
+			params.push_back(temp);
+			//--------------------------------------------------------------------
 		}
 		| parameter_list COMMA type_specifier
 		{
@@ -236,6 +271,21 @@ parameter_list : parameter_list COMMA type_specifier ID
 			//edge is the list or parameters where each parameter has id-name and type
 			$$->edge.push_back(new SymbolInfo($2->getName(),$1->getType()));
 			fprintf(logout,"%s %s\n\n",$1->getType().c_str(),$2->getName().c_str());
+
+			//--------------------------------------------------------------------
+			//insert in the current scope, already a new scope has been created
+			//we insert in params for now, later we will insert them in the table
+			SymbolInfo *temp=new SymbolInfo($2->getName(),"ID");
+
+			int n;
+			temp->sz=$2->sz;
+
+			temp->setVariableType($1->getType());
+			
+			n=max(1,temp->sz);
+			temp->allocateMemory($1->getType(),n);
+			params.push_back(temp);
+			//--------------------------------------------------------------------
 		}
 		| type_specifier
 		{
@@ -250,7 +300,7 @@ parameter_list : parameter_list COMMA type_specifier ID
  		;
 
  		
-compound_statement : LCURL statements RCURL{table.PrintAllScopeTable(logout);table.ExitScope(logout);}
+compound_statement : LCURL statements RCURL
 		{
 			fprintf(logout,"line no. %d: compound_statement : LCURL statements RCURL\n",line);
 			fprintf(logout,"{\n");codes="{";
@@ -264,6 +314,8 @@ compound_statement : LCURL statements RCURL{table.PrintAllScopeTable(logout);tab
 
 			SymbolInfo *newSymbol=new SymbolInfo(codes,"compound_statement");
 			$$=newSymbol;
+
+			table.PrintAllScopeTable(logout);table.ExitScope(logout);
 		}
  		    | LCURL RCURL
  		{
@@ -360,16 +412,15 @@ declaration_list : declaration_list COMMA ID
 
  			else {
  				//insert in SymbolTable directly if not declared before
- 				SymbolInfo *x=table.lookUp($3->getName());
- 				if(x) {
+ 				if(!table.Insert($3->getName(),"ID",logout)) {
  					fprintf(error,"semantic error found at line %d: variable %s declared before\n\n",line,$1->getName().c_str());
  					semanticErr++;
  				}
 
- 				else {
- 					table.Insert($3->getName(),"var",logout);
+				else {
  					SymbolInfo *temp=table.lookUp($3->getName());
  					temp->setVariableType(variable_type);
+ 					temp->allocateMemory(variable_type,1);
  				}
  			}
  			//---------------------------------------------------------------------------
@@ -397,14 +448,13 @@ declaration_list : declaration_list COMMA ID
 
  			else {
  				//insert in SymbolTable directly if not declared before
- 				SymbolInfo *x=table.lookUp($3->getName());
- 				if(x) {
+ 				if(!table.Insert($3->getName(),"ID",logout)) {
  					fprintf(error,"semantic error found at line %d: variable %s declared before\n\n",line,$1->getName().c_str());
  					semanticErr++;
  				}
 
  				else {
- 					table.Insert($3->getName(),"var",logout);
+ 					SymbolInfo *x=table.lookUp($3->getName());
  					x=table.lookUp($3->getName());
  					x->setVariableType(variable_type);
 
@@ -434,16 +484,15 @@ declaration_list : declaration_list COMMA ID
 
  			else {
  				//insert in SymbolTable directly if not declared before
- 				SymbolInfo *x=table.lookUp($1->getName());
- 				if(x) {
+ 				if(!table.Insert($1->getName(),"ID",logout)) {
  					fprintf(error,"semantic error found at line %d: variable %s declared before\n\n",line,$1->getName().c_str());
  					semanticErr++;
  				}
 
  				else {
- 					table.Insert($1->getName(),"var",logout);
  					SymbolInfo *temp=table.lookUp($1->getName());
  					temp->setVariableType(variable_type);
+ 					temp->allocateMemory(variable_type,1);
  				}
  			}
  			//---------------------------------------------------------------------------
@@ -467,14 +516,13 @@ declaration_list : declaration_list COMMA ID
 
  			else {
  				//insert in SymbolTable directly if not declared before
- 				SymbolInfo *x=table.lookUp($1->getName());
- 				if(x) {
+ 				if(table.Insert($1->getName(),"ID",logout)) {
  					fprintf(error,"semantic error found at line %d: variable %s declared before\n\n",line,$1->getName().c_str());
  					semanticErr++;
  				}
 
  				else {
- 					table.Insert($1->getName(),"var",logout);
+ 					SymbolInfo *x=table.lookUp($1->getName());
  					x=table.lookUp($1->getName());
  					x->setVariableType(variable_type);
 

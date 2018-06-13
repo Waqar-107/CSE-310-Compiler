@@ -413,7 +413,7 @@ declaration_list : declaration_list COMMA ID
  			else {
  				//insert in SymbolTable directly if not declared before
  				if(!table.Insert($3->getName(),"ID",logout)) {
- 					fprintf(error,"semantic error found at line %d: variable %s declared before\n\n",line,$1->getName().c_str());
+ 					fprintf(error,"semantic error found at line %d: variable \'%s\' declared before\n\n",line,$1->getName().c_str());
  					semanticErr++;
  				}
 

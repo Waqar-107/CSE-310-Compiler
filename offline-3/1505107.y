@@ -45,6 +45,7 @@ string stoi(int n){
 	return temp;
 }
 
+
 %}
 
 %union{
@@ -129,7 +130,7 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 			fprintf(logout,"line no. %d: func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON\n",line);
 			
 			//int foo(int a,float b);
-			table.Insert($2->getName(),"function");
+			table.Insert($2->getName(),"function",logout);
 			
 			SymbolInfo *x=table.lookUp($2->getName());
 			x->setReturnType($1->getType());
@@ -151,7 +152,7 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 			fprintf(logout,"line no. %d: func_declaration : type_specifier ID LPAREN RPAREN SEMICOLON\n",line);
 
 			//int foo();
-			table.Insert($2->getName(),"function");
+			table.Insert($2->getName(),"function",logout);
 			
 			SymbolInfo *x=table.lookUp($2->getName());
 			x->setReturnType($1->getType());
@@ -249,7 +250,7 @@ parameter_list : parameter_list COMMA type_specifier ID
  		;
 
  		
-compound_statement : LCURL statements RCURL
+compound_statement : LCURL statements RCURL{table.PrintAllScopeTable(logout);table.ExitScope(logout);}
 		{
 			fprintf(logout,"line no. %d: compound_statement : LCURL statements RCURL\n",line);
 			fprintf(logout,"{\n");codes="{";
@@ -259,7 +260,7 @@ compound_statement : LCURL statements RCURL
 				fprintf(logout,"%s\n",$2->edge[i]->getName().c_str());
 			}
 
-			fprintf(logout,"}\n");codes+="}\n\n";
+			fprintf(logout,"}\n\n");codes+="}\n";
 
 			SymbolInfo *newSymbol=new SymbolInfo(codes,"compound_statement");
 			$$=newSymbol;
@@ -366,7 +367,9 @@ declaration_list : declaration_list COMMA ID
  				}
 
  				else {
- 					table.Insert($3->getName(),variable_type);
+ 					table.Insert($3->getName(),"var",logout);
+ 					SymbolInfo *temp=table.lookUp($3->getName());
+ 					temp->setVariableType(variable_type);
  				}
  			}
  			//---------------------------------------------------------------------------
@@ -387,23 +390,27 @@ declaration_list : declaration_list COMMA ID
 
 			//---------------------------------------------------------------------------
 			//semantics and insertion in the table
- 			if(variable_type=="VOID") {
+ 			if(variable_type=="void") {
  				fprintf(error,"semantic error found at line %d: variable cannot be of type void\n\n",line);
  				semanticErr++;
  			}
 
  			else {
  				//insert in SymbolTable directly if not declared before
- 				SymbolInfo *x=table.lookUp($1->getName());
+ 				SymbolInfo *x=table.lookUp($3->getName());
  				if(x) {
  					fprintf(error,"semantic error found at line %d: variable %s declared before\n\n",line,$1->getName().c_str());
  					semanticErr++;
  				}
 
  				else {
- 					//table.Insert($3->getName(),variable_type);
- 					//x=table.lookUp($3->getName());
- 					x->sz=atoi($5->getName().c_str());
+ 					table.Insert($3->getName(),"var",logout);
+ 					x=table.lookUp($3->getName());
+ 					x->setVariableType(variable_type);
+
+ 					int n=atoi($5->getName().c_str());
+ 					x->allocateMemory(variable_type,n);
+ 					x->sz=n;
  				}
  			}
  			//---------------------------------------------------------------------------
@@ -434,8 +441,9 @@ declaration_list : declaration_list COMMA ID
  				}
 
  				else {
- 					//table.Insert($1->getName(),$1->getType());
- 					
+ 					table.Insert($1->getName(),"var",logout);
+ 					SymbolInfo *temp=table.lookUp($1->getName());
+ 					temp->setVariableType(variable_type);
  				}
  			}
  			//---------------------------------------------------------------------------
@@ -452,7 +460,7 @@ declaration_list : declaration_list COMMA ID
 
  			//---------------------------------------------------------------------------
 			//semantics and insertion in the table
- 			if(variable_type=="VOID") {
+ 			if(variable_type=="void") {
  				fprintf(error,"semantic error found at line %d: variable cannot be of type void\n\n",line);
  				semanticErr++;
  			}
@@ -466,9 +474,13 @@ declaration_list : declaration_list COMMA ID
  				}
 
  				else {
- 					table.Insert($1->getName(),$1->getType());
+ 					table.Insert($1->getName(),"var",logout);
  					x=table.lookUp($1->getName());
- 					x->sz=atoi($3->getName().c_str());
+ 					x->setVariableType(variable_type);
+
+ 					int n=atoi($3->getName().c_str());
+ 					x->allocateMemory(variable_type,n);
+ 					x->sz=n;
  				}
  			}
  			//---------------------------------------------------------------------------

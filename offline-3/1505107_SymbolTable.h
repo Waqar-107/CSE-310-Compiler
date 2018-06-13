@@ -26,6 +26,9 @@ public:
         this->type="";
         this->name="";
         this->return_type="";
+        this->variable_type="";
+
+        ivalue=0; fvalue=0; cvalue=0; sz=0;
 
 		prev = 0;
 		next = 0;
@@ -35,6 +38,9 @@ public:
         this->type=type;
         this->name="";
         this->return_type="";
+        this->variable_type="";
+
+        ivalue=0; fvalue=0; cvalue=0; sz=0;
 
         prev = 0;
 		next = 0;
@@ -43,6 +49,10 @@ public:
 	SymbolInfo(string name, string type) {
 		this->name = name;
 		this->type = type;
+		this->return_type="";
+        this->variable_type="";
+
+        ivalue=0; fvalue=0; cvalue=0; sz=0;
 
 		prev = 0;
 		next = 0;
@@ -72,6 +82,14 @@ public:
 		this->return_type = rtype;
 	}
 
+	string getVariableType() {
+		return variable_type;
+	}
+
+	void setVariableType(string variable_type) {
+		this->variable_type = variable_type;
+	}
+
 	SymbolInfo *getPrev() {
 		return prev;
 	}
@@ -89,12 +107,20 @@ public:
 	}
 
 	void allocateMemory(string choice, int n) {
-        if(choice=="int")
+        if(choice=="int") {
             ivalue=new int[n];
-        else if(choice=="float")
+            fill(ivalue,ivalue+n,0);
+        }
+
+        else if(choice=="float") {
             fvalue=new float[n];
-        else if(choice=="char")
+            fill(fvalue,fvalue+n,0.0);
+        }
+
+        else if(choice=="char") {
             cvalue=new char[n];
+            fill(cvalue,cvalue+n,'#');
+        }
 	}
 };
 
@@ -281,10 +307,11 @@ public:
 		current = 0;
 	}
 
-	void EnterScope()
+	void EnterScope(FILE *logout)
 	{
 		id++;
 		ScopeTable *newScopeTable = new ScopeTable(n, id);
+		fprintf(logout,"ScopeTable with ID %d Created\n\n",id);
 
 		if (!v.empty())
 			newScopeTable->setParentScopeTable(v.back());
@@ -293,12 +320,13 @@ public:
 		v.push_back(newScopeTable);
 	}
 
-	void ExitScope()
+	void ExitScope(FILE *logout)
 	{
 		if (!id)
 			return;
 
-		id--;
+		//id--;
+		fprintf(logout,"ScopeTable with ID %d Removed\n\n",id);
 
 		dell = current;
 		current = current->getParentScopeTable();
@@ -307,14 +335,14 @@ public:
 		delete dell;
 	}
 
-	bool Insert(string name, string type)
+	bool Insert(string name, string type,FILE *logout)
 	{
 		if (current)
 			return current->Insert(name, type);
 
 		else
 		{
-			EnterScope();
+			EnterScope(logout);
 			return current->Insert(name, type);
 		}
 	}

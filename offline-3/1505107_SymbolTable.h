@@ -13,7 +13,7 @@ typedef unsigned long long int ull;
 class SymbolInfo
 {
 	string name, type, return_type;
-	string variable_type;
+	string variable_type, identity;
 	SymbolInfo *prev, *next;
 
 
@@ -80,6 +80,14 @@ public:
 
 	void setReturnType(string rtype) {
 		this->return_type = rtype;
+	}
+
+	string getIdentity() {
+        return identity;
+	}
+
+	void setIdentity(string identity) {
+        this->identity = identity;
 	}
 
 	string getVariableType() {
@@ -311,7 +319,9 @@ public:
 	{
 		id++;
 		ScopeTable *newScopeTable = new ScopeTable(n, id);
-		fprintf(logout,"ScopeTable with ID %d Created\n\n",id);
+		fprintf(logout,"###############################\n");
+		fprintf(logout,"#ScopeTable with ID %d Created#\n",id);
+		fprintf(logout,"###############################\n\n");
 
 		if (!v.empty())
 			newScopeTable->setParentScopeTable(v.back());
@@ -326,7 +336,9 @@ public:
 			return;
 
 		//id--;
-		fprintf(logout,"ScopeTable with ID %d Removed\n\n",id);
+		fprintf(logout,"###############################\n");
+		fprintf(logout,"#ScopeTable with ID %d Removed#\n",id);
+		fprintf(logout,"###############################\n\n");
 
 		dell = current;
 		current = current->getParentScopeTable();

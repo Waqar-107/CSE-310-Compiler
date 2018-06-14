@@ -4,7 +4,6 @@
 #include<cstdlib>
 #include<cstring>
 #include<cmath>
-#include <limits>
 #include<string>
 #include<vector>
 #include<algorithm>
@@ -22,12 +21,13 @@ string variable_type;
 extern FILE *yyin;
 FILE *logout,*error;
 
-SymbolTable table(22);
+SymbolTable table(10);
 
 string codes;
 vector<string> code_list;
 vector<string> statement_list;
 vector<SymbolInfo*> params;
+SymbolInfo *currentFunction;
 
 void yyerror(const char *s) {
 	cnt_err++;
@@ -139,7 +139,10 @@ unit : var_declaration
      | func_definition
      	{
 		   	fprintf(logout,"line no. %d: unit : func_declation\n",line);
-		   	
+		   	fprintf(logout,"%s\n\n",$1->getName().c_str());
+
+		   	SymbolInfo *x=new SymbolInfo($1->getName(),"unit");
+		   	$$=x;
    	   	}
      ;
      
@@ -148,15 +151,24 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 			fprintf(logout,"line no. %d: func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON\n",line);
 			
 			//int foo(int a,float b);
-			table.Insert($2->getName(),"ID",logout);
-			
-			SymbolInfo *x=table.lookUp($2->getName());
-			x->setReturnType($1->getType());
+			if(!table.Insert($2->getName(),"ID",logout)){
+				semanticErr++;
+				fprintf(error,"semantic error found on line %d: function name declared before.\n\n",line);
+			}
+
+			else{
+				SymbolInfo *x=table.lookUp($2->getName());
+				x->setReturnType($1->getType());
+				x->setIdentity("function_declaration");
+
+				for(int i=0;i<$4->edge.size();i++){
+					x->edge.push_back($4->edge[i]);
+				}
+			}
 			
 			codes="";
 			codes+=($1->getType()+" "+$2->getName()+"(");
 			for(int i=0;i<$4->edge.size();i++){
-				x->edge.push_back($4->edge[i]);
 				codes+=($4->edge[i]->getType()+" "+$4->edge[i]->getName());
 			}
 
@@ -170,10 +182,16 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 			fprintf(logout,"line no. %d: func_declaration : type_specifier ID LPAREN RPAREN SEMICOLON\n",line);
 
 			//int foo();
-			table.Insert($2->getName(),"function",logout);
-			
-			SymbolInfo *x=table.lookUp($2->getName());
-			x->setReturnType($1->getType());
+			if(!table.Insert($2->getName(),"ID",logout)){
+				semanticErr++;
+				fprintf(error,"semantic error found on line %d: function name declared before.\n\n",line);
+			}
+
+			else{
+				SymbolInfo *x=table.lookUp($2->getName());
+				x->setReturnType($1->getType());
+				x->setIdentity("function_declaration");
+			}
 			
 			codes="";
 			codes+=($1->getType()+" "+$2->getName()+"();");
@@ -203,7 +221,19 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 			SymbolInfo *newSymbol=new SymbolInfo(codes,"func_definition");
 			$$=newSymbol;
 
+			/*check if the function has been declared previously or not
+			if yes then match the parameter_list, else insert it and also update
+			current function pointer, later before exiting the scope of this function
+			insert all the variables in the vector*/
+			SymbolInfo *x=table.lookUp($2->getName());
 			
+			if(x){
+
+			}
+
+			else{
+
+			}
 		}
 		| type_specifier ID LPAREN RPAREN{table.EnterScope(logout);} compound_statement
 		{
@@ -216,6 +246,37 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 
 			SymbolInfo *newSymbol=new SymbolInfo(codes,"func_definition");
 			$$=newSymbol;
+
+			/*check if the function has been declared previously or not
+			if yes then match the parameter_list, else insert it and also update
+			current function pointer, later before exiting the scope of this function
+			insert all the variables in the vector*/
+			SymbolInfo *x=table.lookUp($2->getName());
+
+			if(x){
+				if(x->getIdentity()=="func_defined"){
+					fprintf(logout,"semantic error found on line %d: function with same name already defined\n\n",line);
+				}
+
+				else{
+					if(x->edge().size()>0){
+						fprintf(logout,"semantic error found on line %d: parameter quantity does not match with declarations\n\n",line);
+					}
+
+					else{
+						//already inserted, edit it
+						x->setIdentity("func_defined");
+						currentFunction=x;
+					}
+				}
+			}
+
+			else{
+				table.Insert($2->getName(),"ID");
+				x=table.lookUp($2->getName());
+				x->setIdentity("func_defined");
+				currentFunction=x;
+			}
 		}
  		;				
 
@@ -421,6 +482,7 @@ declaration_list : declaration_list COMMA ID
  					SymbolInfo *temp=table.lookUp($3->getName());
  					temp->setVariableType(variable_type);
  					temp->allocateMemory(variable_type,1);
+ 					temp->setIdentity("var");
  				}
  			}
  			//---------------------------------------------------------------------------
@@ -461,6 +523,7 @@ declaration_list : declaration_list COMMA ID
  					int n=atoi($5->getName().c_str());
  					x->allocateMemory(variable_type,n);
  					x->sz=n;
+ 					x->setIdentity("arr");
  				}
  			}
  			//---------------------------------------------------------------------------
@@ -493,6 +556,7 @@ declaration_list : declaration_list COMMA ID
  					SymbolInfo *temp=table.lookUp($1->getName());
  					temp->setVariableType(variable_type);
  					temp->allocateMemory(variable_type,1);
+ 					temp->setIdentity("var");
  				}
  			}
  			//---------------------------------------------------------------------------
@@ -529,6 +593,7 @@ declaration_list : declaration_list COMMA ID
  					int n=atoi($3->getName().c_str());
  					x->allocateMemory(variable_type,n);
  					x->sz=n;
+ 					x->setIdentity("arr");
  				}
  			}
  			//---------------------------------------------------------------------------
@@ -828,7 +893,7 @@ factor : variable
 	| variable INCOP
 		{
 			fprintf(logout,"line no. %d: factor	: variable INCOP\n",line);
-			fprintf(logout,"%s++",$1->getName().c_str());
+			fprintf(logout,"%s++\n\n",$1->getName().c_str());
 
 			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+"++","factor");
 			$$=newSymbol;
@@ -836,7 +901,7 @@ factor : variable
 	| variable DECOP
 		{
 			fprintf(logout,"line no. %d: factor	: variable DECOP\n",line);
-			fprintf(logout,"%s--",$1->getName().c_str());
+			fprintf(logout,"%s--\n\n",$1->getName().c_str());
 
 			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+"--","factor");
 			$$=newSymbol;
@@ -891,7 +956,9 @@ int main(int argc,char *argv[])
 	logout= fopen(argv[2],"a");
 	error= fopen(argv[3],"a");
 	
+	currentFunction=0;
 	cnt_err=0;
+
 	yyparse();
 
 	//print the SymbolTable and other credentials

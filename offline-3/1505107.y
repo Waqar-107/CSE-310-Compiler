@@ -210,6 +210,7 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 			for(int i=0;i<$4->edge.size();i++){
 				codes+=($4->edge[i]->getType()+" "+$4->edge[i]->getName());
 			}
+			codes+=")";
 
 			fprintf(logout,"%s)\n\n",codes.c_str());
 			
@@ -304,10 +305,11 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 			
 			if(x){
 				if(x->getIdentity()=="func_defined"){
-					fprintf(logout,"semantic error found on line %d: function with same name already defined\n\n",line);
+					fprintf(error,"semantic error found on line %d: function with same name already defined\n\n",line);
 				}
 
 				else{
+					//declared before
 					//check parameter names and their variable types
 					int cnt=0;
 					for(int i=0;i<$4->edge.size();i++){
@@ -320,20 +322,28 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 					}
 
 					if(cnt!=$4->edge.size()){
-						fprintf(logout,"semantic error in line %d: parameters didn't match from the previously declared one\n\n",line);
+						fprintf(error,"semantic error in line %d: parameters didn't match from the previously declared one\n\n",line);
 						semanticErr++;
 					}
 
 					else{
-						//already inserted and parameters matched, edit it
-						x->setIdentity("func_defined");
-						currentFunction=x;
+						//match return type
+						if(x->getReturnType()==$1->getType()){
+							//already inserted and parameters matched, edit it
+							x->setIdentity("func_defined");
+							currentFunction=x;
 
-						for(int i=0;i<var_list.size();i++){
-							x->edge.push_back(var_list[i]);
+							for(int i=0;i<var_list.size();i++){
+								x->edge.push_back(var_list[i]);
+							}
+
+							currentFunction=x;cout<<var_list.size()<<" "<<$2->getName()<<endl;
 						}
 
-						currentFunction=x;cout<<var_list.size()<<" "<<$2->getName()<<endl;
+						else{
+							semanticErr++;
+							fprintf(error,"semantic error found in line %d: return type didn't match with the previous declaration\n\n",line);
+						}
 					}
 				}
 			}
@@ -403,24 +413,34 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 
 			if(x){
 				if(x->getIdentity()=="func_defined"){
-					fprintf(logout,"semantic error found on line %d: function with same name already defined\n\n",line);
+					semanticErr++;
+					fprintf(error,"semantic error found on line %d: function with same name already defined\n\n",line);
 				}
 
 				else{
 					if(x->edge.size()>0){
-						fprintf(logout,"semantic error found on line %d: parameter quantity does not match with declarations\n\n",line);
+						semanticErr++;
+						fprintf(error,"semantic error found on line %d: parameter quantity does not match with declarations\n\n",line);
 					}
 
 					else{
-						//already inserted, edit it
-						x->setIdentity("func_defined");
-						currentFunction=x;
+						//match return type
+						if(x->getReturnType()==$1->getType()){
+							//already inserted and parameters matched, edit it
+							x->setIdentity("func_defined");
+							currentFunction=x;
 
-						for(int i=0;i<var_list.size();i++){
-							x->edge.push_back(var_list[i]);
+							for(int i=0;i<var_list.size();i++){
+								x->edge.push_back(var_list[i]);
+							}
+
+							currentFunction=x;cout<<var_list.size()<<" "<<$2->getName()<<endl;
 						}
 
-						currentFunction=x;cout<<var_list.size()<<" "<<$2->getName()<<endl;
+						else{
+							semanticErr++;
+							fprintf(error,"semantic error found in line %d: return type didn't match with the previous declaration\n\n",line);
+						}
 					}
 				}
 			}

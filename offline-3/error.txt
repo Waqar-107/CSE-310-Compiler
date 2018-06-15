@@ -1,0 +1,4 @@
+semantic error found in line 12: missing return statement
+
+semantic error found in line 426461664: return type didn't match with the previous declaration
+

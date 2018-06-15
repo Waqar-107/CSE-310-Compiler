@@ -269,6 +269,27 @@ public:
 		fprintf(logout, "	------------------------------\n");
 	}
 
+	vector<SymbolInfo*> returnAllSymbols()
+	 {
+        vector<SymbolInfo*> v;
+        SymbolInfo *temp;
+
+        for (int i = 0; i < n; i++)
+		{
+			if (!bucket[i])
+				continue;
+
+			temp = bucket[i];
+			while (temp)
+			{
+				v.push_back(temp);
+				temp = temp->getNext();
+			}
+		}
+
+		return v;
+	}
+
 	ScopeTable *getParentScopeTable() {
 		return parentScope;
 	}
@@ -319,9 +340,9 @@ public:
 	{
 		id++;
 		ScopeTable *newScopeTable = new ScopeTable(n, id);
-		fprintf(logout,"###############################\n");
-		fprintf(logout,"#ScopeTable with ID %d Created#\n",id);
-		fprintf(logout,"###############################\n\n");
+		fprintf(logout,"################################\n");
+		fprintf(logout,"# ScopeTable with ID %d Created #\n",id);
+		fprintf(logout,"################################\n\n");
 
 		if (!v.empty())
 			newScopeTable->setParentScopeTable(v.back());
@@ -334,11 +355,6 @@ public:
 	{
 		if (!id)
 			return;
-
-		//id--;
-		fprintf(logout,"###############################\n");
-		fprintf(logout,"#ScopeTable with ID %d Removed#\n",id);
-		fprintf(logout,"###############################\n\n");
 
 		dell = current;
 		current = current->getParentScopeTable();
@@ -381,6 +397,16 @@ public:
 		}
 
 		return 0;
+	}
+
+	int getCurrentID() {
+        return id;
+	}
+
+	vector<SymbolInfo*> printCurrentAndGetAll(FILE *logout){
+        vector<SymbolInfo*> v=current->returnAllSymbols();
+        current->printScopeTable(logout);
+        return v;
 	}
 
 	void PrintCurrentScopeTable(FILE *logout) {

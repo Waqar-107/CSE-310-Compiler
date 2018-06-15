@@ -27,7 +27,9 @@ string codes;
 vector<string> code_list;
 vector<string> statement_list;
 vector<SymbolInfo*> params;
+vector<SymbolInfo*> var_list;
 SymbolInfo *currentFunction;
+bool isReturning;
 
 void yyerror(const char *s) {
 	cnt_err++;
@@ -163,6 +165,7 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 
 				for(int i=0;i<$4->edge.size();i++){
 					x->edge.push_back($4->edge[i]);
+					x->edge[i]->setIdentity("params");
 				}
 			}
 			
@@ -221,6 +224,28 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 			SymbolInfo *newSymbol=new SymbolInfo(codes,"func_definition");
 			$$=newSymbol;
 
+			//------------------------------------------
+			//current scope obtained, insert the function in the global scope
+			int id=table.getCurrentID();
+			var_list=table.printCurrentAndGetAll(logout);
+			table.ExitScope(logout);
+			//------------------------------------------
+
+			//-----------------------------------------------------------------------
+			//semantic error: type_specifier void and return
+			if(isReturning && $1->getType()=="void"){
+				semanticErr++;
+				fprintf(error,"semantic error found in line %d: type-specifier is of type void, can't return\n\n",line);
+			}
+
+			else if(!isReturning && $1->getType()!="void"){
+				semanticErr++;
+				fprintf(error,"semantic error found in line %d: missing return statement\n\n",line);
+			}
+
+			isReturning=false;
+			//-----------------------------------------------------------------------
+
 			/*check if the function has been declared previously or not
 			if yes then match the parameter_list, else insert it and also update
 			current function pointer, later before exiting the scope of this function
@@ -228,12 +253,63 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 			SymbolInfo *x=table.lookUp($2->getName());
 			
 			if(x){
+				if(x->getIdentity()=="func_defined"){
+					fprintf(logout,"semantic error found on line %d: function with same name already defined\n\n",line);
+				}
 
+				else{
+					//check parameter names and their variable types
+					int cnt=0;
+					for(int i=0;i<$4->edge.size();i++){
+						for(int j=0;j<var_list.size();j++){
+							if(var_list[i]->getIdentity()=="param" && var_list[i]->getName()==$4->edge[i]->getName() && var_list[i]->getVariableType()==$4->edge[i]->getVariableType()){
+								cnt++;
+								break;
+							}
+						}
+					}
+
+					if(cnt!=$4->edge.size()){
+						fprintf(logout,"semantic error in line %d: parameters didn't match from the previously declared one\n\n",line);
+						semanticErr++;
+					}
+
+					else{
+						//already inserted and parameters matched, edit it
+						x->setIdentity("func_defined");
+						currentFunction=x;
+
+						for(int i=0;i<var_list.size();i++){
+							x->edge.push_back(var_list[i]);
+						}
+
+						currentFunction=x;cout<<var_list.size()<<" "<<$2->getName()<<endl;
+					}
+				}
 			}
 
 			else{
+				table.Insert($2->getName(),"ID",logout);
+				x=table.lookUp($2->getName());
+				x->setIdentity("func_defined");
+				x->setVariableType($1->getType());
+				
+				for(int i=0;i<var_list.size();i++){
+					x->edge.push_back(var_list[i]);
+				}
 
+				currentFunction=x;cout<<var_list.size()<<" "<<$2->getName()<<endl;
 			}
+
+			//exit new scope created by a function
+			table.PrintAllScopeTable(logout);
+
+			//give exit message
+			fprintf(logout,"################################\n");
+			fprintf(logout,"# ScopeTable with ID %d Removed #\n",id);
+			fprintf(logout,"################################\n\n");
+
+			var_list.clear();
 		}
 		| type_specifier ID LPAREN RPAREN{table.EnterScope(logout);} compound_statement
 		{
@@ -247,6 +323,28 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 			SymbolInfo *newSymbol=new SymbolInfo(codes,"func_definition");
 			$$=newSymbol;
 
+			//------------------------------------------
+			//current scope obtained, insert the function in the global scope
+			int id=table.getCurrentID();
+			var_list=table.printCurrentAndGetAll(logout);
+			table.ExitScope(logout);
+			//------------------------------------------
+
+			//-----------------------------------------------------------------------
+			//semantic error: type_specifier void and return
+			if(isReturning && $1->getType()=="void"){
+				semanticErr++;
+				fprintf(error,"semantic error found in line %d: type-specifier is of type void, can't return\n\n",line);
+			}
+
+			else if(!isReturning && $1->getType()!="void"){
+				semanticErr++;
+				fprintf(error,"semantic error found in line %d: missing return statement\n\n",line);
+			}
+
+			isReturning=false;
+			//-----------------------------------------------------------------------
+
 			/*check if the function has been declared previously or not
 			if yes then match the parameter_list, else insert it and also update
 			current function pointer, later before exiting the scope of this function
@@ -259,7 +357,7 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 				}
 
 				else{
-					if(x->edge().size()>0){
+					if(x->edge.size()>0){
 						fprintf(logout,"semantic error found on line %d: parameter quantity does not match with declarations\n\n",line);
 					}
 
@@ -267,16 +365,38 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 						//already inserted, edit it
 						x->setIdentity("func_defined");
 						currentFunction=x;
+
+						for(int i=0;i<var_list.size();i++){
+							x->edge.push_back(var_list[i]);
+						}
+
+						currentFunction=x;cout<<var_list.size()<<" "<<$2->getName()<<endl;
 					}
 				}
 			}
 
 			else{
-				table.Insert($2->getName(),"ID");
+				table.Insert($2->getName(),"ID",logout);
 				x=table.lookUp($2->getName());
 				x->setIdentity("func_defined");
-				currentFunction=x;
+				
+				for(int i=0;i<var_list.size();i++){
+					x->edge.push_back(var_list[i]);
+				}
+
+				currentFunction=x;cout<<var_list.size()<<" "<<$2->getName()<<endl;
+				x->setVariableType($1->getType());
 			}
+
+			//exit new scope created by a function
+			table.PrintAllScopeTable(logout);
+
+			//give exit message
+			fprintf(logout,"################################\n");
+			fprintf(logout,"# ScopeTable with ID %d Removed #\n",id);
+			fprintf(logout,"################################\n\n");
+
+			var_list.clear();
 		}
  		;				
 
@@ -375,8 +495,6 @@ compound_statement : LCURL statements RCURL
 
 			SymbolInfo *newSymbol=new SymbolInfo(codes,"compound_statement");
 			$$=newSymbol;
-
-			table.PrintAllScopeTable(logout);table.ExitScope(logout);
 		}
  		    | LCURL RCURL
  		{
@@ -580,7 +698,7 @@ declaration_list : declaration_list COMMA ID
 
  			else {
  				//insert in SymbolTable directly if not declared before
- 				if(table.Insert($1->getName(),"ID",logout)) {
+ 				if(!table.Insert($1->getName(),"ID",logout)) {
  					fprintf(error,"semantic error found at line %d: variable %s declared before\n\n",line,$1->getName().c_str());
  					semanticErr++;
  				}
@@ -706,6 +824,8 @@ statement : var_declaration
 
 			SymbolInfo *newSymbol=new SymbolInfo(codes,"statement");
 			$$=newSymbol;
+
+			isReturning=true;
 		}
 	  ;
 	  
@@ -956,6 +1076,7 @@ int main(int argc,char *argv[])
 	logout= fopen(argv[2],"a");
 	error= fopen(argv[3],"a");
 	
+	isReturning=false;
 	currentFunction=0;
 	cnt_err=0;
 

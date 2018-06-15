@@ -154,8 +154,44 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 			
 			//int foo(int a,float b);
 			if(!table.Insert($2->getName(),"ID",logout)){
-				semanticErr++;
-				fprintf(error,"semantic error found on line %d: function name declared before.\n\n",line);
+				//---------------------------------------------------------------------
+				//semantic error check: same function can be declared before->in that case check params
+				//if defined before then can't be declared again
+
+				SymbolInfo *x=table.lookUp($2->getName());
+
+				if(x->getIdentity()=="func_defined"){
+					semanticErr++;
+					fprintf(error,"semantic error found in line %d: function with same name declared before\n\n",line);
+				}
+
+				else{
+					if(x->getReturnType()!=$1->getType()){
+						semanticErr++;
+						fprintf(error,"semantic error found in line %d: function was declared before with a different return type\n\n");
+					}
+
+					else{
+						//return type is fine- check the parameters
+						int n=x->edge.size();
+						bool f=1;
+
+						if(n==$4->edge.size()){
+							for(int i=0;i<n;i++){
+								if(x->edge[i]->getName()!=$4->edge[i]->getName() || x->edge[i]->getType()!=$4->edge[i]->getType()){
+									semanticErr++;
+									fprintf(error,"semantic error found in line %d: parameters didn't match with the previous declaration\n\n");
+									break;
+								}
+							}
+						}
+
+						else{
+							semanticErr++;
+							fprintf(error,"semantic error found in line %d: parameter number didn't match with previous declaration\n\n",line);
+						}
+					}
+				}
 			}
 
 			else{
@@ -186,8 +222,22 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 
 			//int foo();
 			if(!table.Insert($2->getName(),"ID",logout)){
-				semanticErr++;
-				fprintf(error,"semantic error found on line %d: function name declared before.\n\n",line);
+				
+				SymbolInfo *x=table.lookUp($2->getName());
+				if(x->getIdentity()=="func_defined"){
+					semanticErr++;
+					fprintf(error,"semantic error found in line %d: function with same name defined before.\n\n",line);
+				}
+
+				else if(x->edge.size()>0){
+					semanticErr++;
+					fprintf(error,"semantic error found in line %d: parameter list didn't match with the previous declaration.\n\n",line);
+				}
+
+				else if(x->getReturnType()!=$1->getType()){
+					semanticErr++;
+					fprintf(error,"semantic error found on line %d: function was declared before with a different return type.\n\n",line);
+				}
 			}
 
 			else{
@@ -210,7 +260,7 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 		{
 			fprintf(logout,"line no. %d: func_definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement\n",line);
 
-			codes=variable_type+" ";
+			codes=$1->getType()+" ";
 			codes+=$2->getName(); codes+="(";
 			for(int i=0;i<$4->edge.size();i++){
 				codes+=$4->edge[i]->getType()+" "+$4->edge[i]->getName();
@@ -315,7 +365,7 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 		{
 			fprintf(logout,"line no. %d: func_definition : type_specifier ID LPAREN RPAREN compound_statement\n",line);
 
-			codes=$1->getName();
+			codes=$1->getType()+" ";
 			codes+=$2->getName();codes+="()";codes+=$6->getName();
 
 			fprintf(logout,"%s\n\n",codes.c_str());

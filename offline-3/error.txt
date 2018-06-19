@@ -1,7 +1,12 @@
-semantic error found on line 2: id already declared
-
-semantic error in line 4: parameters didn't match from the previously declared one
-
+------------------------------------------------------------
+	------------------------------
+	ScopeTable #2
+	------------------------------
+	------------------------------
+	ScopeTable #1
+	5  --> <func, ID> 
+	------------------------------
+------------------------------------------------------------
 semantic error found at line 7: variable c declared before
 
 semantic error found in line 8: type mismatch, array index must be integer

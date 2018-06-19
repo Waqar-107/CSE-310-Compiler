@@ -49,11 +49,12 @@ string stoi(int n){
 }
 
 void fillScopeWithParams(){
+	
 	for(int i=0;i<params.size();i++)
 	{
 		if(!table.Insert(params[i]->getName(),"ID",logout)){
 			semanticErr++;
-			fprintf(error,"semantic error found on line %d: id already declared\n\n",line);
+			fprintf(error,"semantic error found on line %d: variable '%s' already declared before\n\n",line,params[i]->getName().c_str());
 		}
 
 		else{
@@ -155,7 +156,7 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 			//int foo(int a,float b);
 			if(!table.Insert($2->getName(),"ID",logout)){
 				semanticErr++;
-				fprintf(error,"semantic error found in line %d: redeclaration of function \'%s\'\n\n",line,$2->getName().c_str());
+				fprintf(error,"semantic error found in line %d: re-declaration of function \'%s\'\n\n",line,$2->getName().c_str());
 			}
 
 			else{
@@ -168,7 +169,7 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 					x->edge[i]->setIdentity("params");
 				}
 			}
-			
+
 			codes="";
 			codes+=($1->getType()+" "+$2->getName()+"(");
 			for(int i=0;i<$4->edge.size();i++){
@@ -176,12 +177,14 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 				if(i<$4->edge.size()-1)
 					codes+=",";
 			}
-			codes+=")";
+			codes+=");";
 
-			fprintf(logout,"%s)\n\n",codes.c_str());
+			fprintf(logout,"%s\n\n",codes.c_str());
 			
 			SymbolInfo *newSymbol=new SymbolInfo(codes,"func_declaration");
 			$$=newSymbol;
+
+			params.clear();
 		}
 		| type_specifier ID LPAREN RPAREN SEMICOLON
 		{
@@ -874,7 +877,8 @@ expression_statement : SEMICOLON
 			fprintf(logout,"line no. %d: expression_statement : SEMICOLON\n",line);
 			fprintf(logout,";\n\n");
 
-			$$=$1;
+			SymbolInfo *newSymbol=new SymbolInfo(";","expression_statement");
+			$$=newSymbol;
 		}			
 			| expression SEMICOLON
 		{

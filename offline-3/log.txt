@@ -8,17 +8,13 @@ line no. 1: parameter_list : type_specifier ID
 int a
 
 line no. 1: func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
-################################
-# ScopeTable with ID 1 Created #
-################################
-
-int func(int a))
+int func(int a);
 
 line no. 1: unit : func_declaration
-int func(int a)
+int func(int a);
 
 line no. 1: program : unit
-int func(int a)
+int func(int a);
 
 line no. 2: type_specifier : INT 
 int
@@ -28,12 +24,6 @@ int
 
 line no. 2: parameter_list : type_specifier ID
 int a
-
-line no. 2: type_specifier : INT 
-int
-
-line no. 2: parameter_list : parameter_list COMMA type_specifier ID
-int a,int y
 
 ################################
 # ScopeTable with ID 2 Created #
@@ -75,14 +65,13 @@ return a;
 }
 
 line no. 4: func_definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement
-int func(int aint y){return a;
+int func(int a){return a;
 }
 
 
 	------------------------------
 	ScopeTable #2
 	1  --> <a, ID> 
-	5  --> <y, ID> 
 	------------------------------
 ------------------------------------------------------------
 	------------------------------
@@ -95,13 +84,13 @@ int func(int aint y){return a;
 ################################
 
 line no. 4: unit : func_declaration
-int func(int aint y){return a;
+int func(int a){return a;
 }
 
 
 line no. 4: program : program unit
-int func(int a)
-int func(int aint y){return a;
+int func(int a);
+int func(int a){return a;
 }
 
 
@@ -523,8 +512,8 @@ return 0;
 
 
 line no. 15: program : program unit
-int func(int a)
-int func(int aint y){return a;
+int func(int a);
+int func(int a){return a;
 }
 
 int main(){int a[2],c,i,j;
@@ -540,8 +529,8 @@ return 0;
 
 
 line no. 16: start : program
-int func(int a)
-int func(int aint y){return a;
+int func(int a);
+int func(int a){return a;
 }
 
 int main(){int a[2],c,i,j;
@@ -564,4 +553,4 @@ return 0;
 	------------------------------
 ------------------------------------------------------------
 total lines read: 15
-total errors encountered: 4
+total errors encountered: 2

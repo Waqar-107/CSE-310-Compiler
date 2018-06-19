@@ -334,6 +334,16 @@ public:
 		this->n = n;
 		id = 0;
 		current = 0;
+
+		//global scope
+		id++;
+		ScopeTable *newScopeTable = new ScopeTable(n, id);
+
+		if (!v.empty())
+			newScopeTable->setParentScopeTable(v.back());
+
+		current = newScopeTable;
+		v.push_back(newScopeTable);
 	}
 
 	void EnterScope(FILE *logout)

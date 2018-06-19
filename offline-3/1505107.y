@@ -53,7 +53,7 @@ void fillScopeWithParams(){
 	{
 		if(!table.Insert(params[i]->getName(),"ID",logout)){
 			semanticErr++;
-			fprintf(logout,"semantic error found on line %d: id already declared\n\n",line);
+			fprintf(error,"semantic error found on line %d: id already declared\n\n",line);
 		}
 
 		else{
@@ -874,8 +874,7 @@ expression_statement : SEMICOLON
 			fprintf(logout,"line no. %d: expression_statement : SEMICOLON\n",line);
 			fprintf(logout,";\n\n");
 
-			SymbolInfo *newSymbol=new SymbolInfo(";","expression_statement");
-			$$=newSymbol;
+			$$=$1;
 		}			
 			| expression SEMICOLON
 		{
@@ -901,6 +900,15 @@ variable : ID
 
 			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+"["+$3->getName()+"]","variable");
 			$$=newSymbol;
+			$$->setVariableType($3->getVariableType());
+
+			//--------------------------------------------------------------------------
+			//type checking, expression must be int
+			if($3->getVariableType()!="int"){
+				semanticErr++;
+				fprintf(error,"semantic error found in line %d: type mismatch, array index must be integer\n\n",line);
+			}
+			//--------------------------------------------------------------------------
 		}
 	 ;
 	 
@@ -912,12 +920,15 @@ variable : ID
 			$$=$1;
 		}	
 	   | variable ASSIGNOP logic_expression 	
-		{//semantic error check dite hbe
+		{
 			fprintf(logout,"line no. %d: expression : variable ASSIGNOP logic_expression\n",line);
 			fprintf(logout,"%s=%s\n\n",$1->getName().c_str(),$3->getName().c_str());
 
 			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+"="+$3->getName(),"expression");
 			$$=newSymbol;
+
+			//result of logic_expression must be integers
+			$$->setVariableType("int");
 		}
 	   ;
 			
@@ -925,6 +936,7 @@ logic_expression : rel_expression
 		{
 			fprintf(logout,"line no. %d: logic_expression : rel_expression\n",line);
 			fprintf(logout,"%s\n\n",$1->getName().c_str());
+
 			$$=$1;
 		} 	
 		 | rel_expression LOGICOP rel_expression 	
@@ -942,8 +954,7 @@ rel_expression : simple_expression
 			fprintf(logout,"line no. %d: rel_expression : simple_expression\n",line);
 			fprintf(logout,"%s\n\n",$1->getName().c_str());
 
-			SymbolInfo *newSymbol=new SymbolInfo($1->getName(),"rel_expression");
-			$$=newSymbol;
+			$$=$1;
 		}
 		| simple_expression RELOP simple_expression	
 		{
@@ -960,8 +971,7 @@ simple_expression : term
 			fprintf(logout,"line no. %d: simple_expression : term\n",line);
 			fprintf(logout,"%s\n\n",$1->getName().c_str());
 
-			SymbolInfo *newSymbol=new SymbolInfo($1->getName(),"simple_expression");
-			$$=newSymbol;
+			$$=$1;
 		} 
 		  | simple_expression ADDOP term
 		{
@@ -978,8 +988,7 @@ term :	unary_expression
 			fprintf(logout,"line no. %d: term : unary_expression\n",line);
 			fprintf(logout,"%s\n\n",$1->getName().c_str());
 
-			SymbolInfo *newSymbol=new SymbolInfo($1->getName(),"term");
-			$$=newSymbol;
+			$$=$1;
 		}
      |  term MULOP unary_expression
 		{
@@ -1009,7 +1018,7 @@ unary_expression : ADDOP unary_expression
 		}
 		 | factor 
 		{
-			fprintf(logout,"line no. %d: unary_expression factor\n",line);
+			fprintf(logout,"line no. %d: unary_expression : factor\n",line);
 			fprintf(logout,"%s\n\n",$1->getName().c_str());
 
 			$$=$1;
@@ -1043,12 +1052,16 @@ factor : variable
 			fprintf(logout,"line no. %d: factor : CONST_INT\n",line);
 			fprintf(logout,"%s\n\n",$1->getName().c_str());
 			$$=$1;
+
+			$$->setVariableType("int");
 		} 
 	| CONST_FLOAT
 		{
 			fprintf(logout,"line no. %d: factor : CONST_FLOAT\n",line);
 			fprintf(logout,"%s\n\n",$1->getName().c_str());
 			$$=$1;
+
+			$$->setVariableType("float");
 		}
 	| variable INCOP
 		{

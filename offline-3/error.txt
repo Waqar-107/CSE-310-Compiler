@@ -1,4 +1,8 @@
-semantic error in line 5: parameters didn't match from the previously declared one
+semantic error found on line 2: id already declared
 
-semantic error found at line 8: variable c declared before
+semantic error in line 4: parameters didn't match from the previously declared one
+
+semantic error found at line 7: variable c declared before
+
+semantic error found in line 8: type mismatch, array index must be integer
 

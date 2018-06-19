@@ -409,6 +409,10 @@ public:
         return v;
 	}
 
+	ScopeTable *getGlobalScope(){
+        return v[0];
+	}
+
 	void PrintCurrentScopeTable(FILE *logout) {
 		if (current)
 			current->printScopeTable(logout);

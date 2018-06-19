@@ -1,4 +1,3 @@
-
 int func(int a);
 int func(int a,int y){
 	return a;

@@ -896,18 +896,21 @@ variable : ID
 			fprintf(logout,"%s\n\n",$1->getName().c_str());
 
 			$$=$1;
+			$$->setIdentity("var");
 		} 		
 	 | ID LTHIRD expression RTHIRD 
 		{
 			fprintf(logout,"line no. %d: variable : ID LTHIRD expression RTHIRD\n",line);
 			fprintf(logout,"%s[%s]\n\n",$1->getName().c_str(),$3->getName().c_str());
 
-			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+"["+$3->getName()+"]","variable");
+			SymbolInfo *newSymbol=new SymbolInfo($1->getName(),"variable");
 			$$=newSymbol;
 			$$->setVariableType($3->getVariableType());
+			$$->setIdentity("arr");
+			$$->sz=atoi($3->getName().c_str());
 
 			//--------------------------------------------------------------------------
-			//type checking, expression must be int
+			//#semantic: type checking, expression must be int
 			if($3->getVariableType()!="int"){
 				semanticErr++;
 				fprintf(error,"semantic error found in line %d: type mismatch, array index must be integer\n\n",line);
@@ -928,11 +931,39 @@ variable : ID
 			fprintf(logout,"line no. %d: expression : variable ASSIGNOP logic_expression\n",line);
 			fprintf(logout,"%s=%s\n\n",$1->getName().c_str(),$3->getName().c_str());
 
-			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+"="+$3->getName(),"expression");
+			codes=$1->getName();
+			if($1->sz)
+				codes+="["+stoi($1->sz)+"]";
+
+			SymbolInfo *newSymbol=new SymbolInfo(codes+"="+$3->getName(),"expression");
 			$$=newSymbol;
+
+			codes="";
 
 			//result of logic_expression must be integers
 			$$->setVariableType("int");
+
+			//---------------------------------------------------------------------------
+			//#semantic: Array Index: You have to check whether there is index used with array and vice versa.
+			//e.g: int a[10];a=8; or int a;a[5]=5;
+			SymbolInfo *x=table.lookUp($1->getName());
+			if(x){
+				if(x->getIdentity()=="arr" && $1->getIdentity()!="arr"){
+					semanticErr++;
+					fprintf(error,"semantic error found in line %d: array index error\n\n",line);
+				}
+
+				else if(x->getIdentity()!="arr" && $1->sz>0){
+					semanticErr++;
+					fprintf(error,"semantic error found in line %d: array index error\n\n",line);
+				}
+			}
+
+			else{
+				semanticErr++;
+				fprintf(error,"semantic error found in line %d: variable '%s' not declared in this scope\n\n",line,$1->getName().c_str());
+			}
+			//---------------------------------------------------------------------------
 		}
 	   ;
 			
@@ -1001,6 +1032,14 @@ term :	unary_expression
 
 			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+$2->getName()+$3->getName(),"term");
 			$$=newSymbol;
+
+			//------------------------------------------------------------------------
+			//#semantic: check 5%2.5
+			if($2->getName()=="%" && ($1->getVariableType()!="int" || $3->getVariableType()!="int")){
+				semanticErr++;
+				fprintf(error,"semantic error found in line %d: type mismatch, mod operation is only possible with integer operands\n\n",line);
+			}
+			//------------------------------------------------------------------------
 		}
      ;
 

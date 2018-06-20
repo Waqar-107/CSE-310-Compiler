@@ -1,11 +1,10 @@
-int x[10];
-
-int func(int a){
-	return a;
+void func(int a){
+	
 }
 
 void test(){
-	func(x);
+	int x;
+	x=func(5);
 }
 
 int main(){

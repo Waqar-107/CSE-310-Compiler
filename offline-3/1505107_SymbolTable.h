@@ -259,7 +259,7 @@ public:
 			temp = bucket[i];
 			while (temp)
 			{
-				fprintf(logout, "<%s, %s|%s> ", temp->getName().c_str(), temp->getType().c_str(),temp->getIdentity().c_str());
+				fprintf(logout, "<%s, %s> ", temp->getName().c_str(), temp->getType().c_str());
 				temp = temp->getNext();
 			}
 

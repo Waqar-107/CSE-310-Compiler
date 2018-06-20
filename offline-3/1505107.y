@@ -19,6 +19,7 @@ extern int line;
 
 string variable_type;
 string codes;
+string returnType_curr;
 
 extern FILE *yyin;
 FILE *logout,*error;
@@ -302,6 +303,7 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 									//cout<<"in func "<<var_list[i]->getIdentity()<<endl;
 								}
 
+								x->setReturnType($1->getType());
 								currentFunction=x;cout<<var_list.size()<<" "<<$2->getName()<<endl;
 							}
 
@@ -324,6 +326,7 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 				x=table.lookUp($2->getName());
 				x->setIdentity("func_defined");
 				x->setVariableType($1->getType());
+				x->setReturnType($1->getType());
 				
 				for(int i=0;i<var_list.size();i++){
 					x->edge.push_back(var_list[i]);
@@ -619,6 +622,8 @@ declaration_list : declaration_list COMMA ID
 			fprintf(logout,"line no. %d: declaration_list : declaration_list COMMA ID\n",line);
 			
 			$3->setIdentity("var");
+			$3->setVariableType(variable_type);
+			
 			$$->edge.push_back($3);
 
 			//print the declaration_list
@@ -673,6 +678,8 @@ declaration_list : declaration_list COMMA ID
 			fprintf(logout,"%s[%s]\n\n",$3->getName().c_str(),$5->getName());
 
 			$3->setIdentity("arr");
+			$3->setVariableType(variable_type);
+
 			$$->edge.push_back($3);
  			
 
@@ -712,7 +719,10 @@ declaration_list : declaration_list COMMA ID
 
  			SymbolInfo *newSymbol = new SymbolInfo("declaration_list");
  			$$ = newSymbol;
- 			$$->setIdentity("var");
+
+ 			$1->setVariableType(variable_type);$1->setIdentity("var");
+
+ 			$$->setIdentity("declaration_list");
  			$$->edge.push_back($1);
 
  			//---------------------------------------------------------------------------
@@ -744,9 +754,11 @@ declaration_list : declaration_list COMMA ID
  			fprintf(logout,"%s[%s]\n\n",$1->getName().c_str(),$3->getName().c_str());
 
  			SymbolInfo *x = new SymbolInfo("declaration_list");
- 			$$ = x;$$->setIdentity("arr");
+ 			$$ = x;$$->setIdentity("declaration_list");
 
- 			$1->sz=atoi($3->getName().c_str());
+ 			$1->sz=atoi($3->getName().c_str());$1->setVariableType(variable_type);
+ 			$1->setIdentity("arr");
+
  			$$->edge.push_back($1);
 
  			//---------------------------------------------------------------------------
@@ -816,6 +828,7 @@ statement : var_declaration
 
 			SymbolInfo *newSymbol=new SymbolInfo($1->getName(),"statement");
 			$$=newSymbol;
+			$$->setVariableType($1->getVariableType());
 		}
 	  | compound_statement
 	  	{
@@ -907,6 +920,7 @@ expression_statement : SEMICOLON
 
 			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+";","expression_statement");
 			$$=newSymbol;
+			$$->setVariableType($1->getVariableType());
 		} 
 			;
 	  
@@ -960,14 +974,15 @@ variable : ID
 
 			codes="";
 
-			//result of logic_expression must be integers
-			$$->setVariableType("int");
-
 			//---------------------------------------------------------------------------
 			//#semantic: Array Index: You have to check whether there is index used with array and vice versa.
 			//e.g: int a[10];a=8; or int a;a[5]=5;
 			SymbolInfo *x=table.lookUp($1->getName());
-			if(x){
+			if(x)
+			{	
+				//type of var
+				$$->setVariableType(x->getVariableType());
+
 				if(x->getIdentity()=="arr" && $1->getIdentity()!="arr"){
 					semanticErr++;
 					fprintf(error,"semantic error found in line %d: array index error\n\n",line);
@@ -982,6 +997,22 @@ variable : ID
 			else{
 				semanticErr++;
 				fprintf(error,"semantic error found in line %d: variable '%s' not declared in this scope\n\n",line,$1->getName().c_str());
+			}
+			//---------------------------------------------------------------------------
+			//#semantic: check if float is assigned to int or vice-versa
+			if(x)
+			{
+				if(x->getVariableType()!=$3->getVariableType()){
+					semanticErr++;
+					fprintf(error,"semantic error found in line %d: type mismatch, '%s' assigned to '%s' \n\n",line,$3->getVariableType().c_str(),x->getVariableType().c_str());
+				}
+			}
+			//---------------------------------------------------------------------------
+			//#semantic: expression cannot have void return type functions called
+			if(returnType_curr=="void"){
+				semanticErr++;
+				fprintf(error,"semantic error found in line %d: void type function can't be part of expression\n\n",line);
+				returnType_curr="none";
 			}
 			//---------------------------------------------------------------------------
 		}
@@ -1001,6 +1032,11 @@ logic_expression : rel_expression
 
 			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+$2->getName()+$3->getName(),"logic_expression");
 			$$=newSymbol;
+
+			//------------------------------------------------------------------
+			//#semantic: LOGICOP MUST BE INT
+			$$->setVariableType("int");
+			//------------------------------------------------------------------
 		}
 		 ;
 			
@@ -1018,6 +1054,11 @@ rel_expression : simple_expression
 
 			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+$2->getName()+$3->getName(),"rel_expression");
 			$$=newSymbol;
+
+			//------------------------------------------------------------------
+			//#semantic: RELOP MUST BE INT
+			$$->setVariableType("int");
+			//------------------------------------------------------------------
 		}
 		;
 				
@@ -1035,6 +1076,11 @@ simple_expression : term
 
 			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+$2->getName()+$3->getName(),"simple_expression");
 			$$=newSymbol;
+
+			if($1->getVariableType()=="float" || $3->getVariableType()=="float")
+				$$->setVariableType("float");
+			else
+				$$->setVariableType("int");
 		} 
 		  ;
 					
@@ -1060,6 +1106,17 @@ term :	unary_expression
 				fprintf(error,"semantic error found in line %d: type mismatch, mod operation is only possible with integer operands\n\n",line);
 			}
 			//------------------------------------------------------------------------
+
+			//set variable_type
+			if($2->getName()=="%")
+				$$->setVariableType("int");
+			else
+			{
+				if($1->getVariableType()=="float" || $3->getVariableType()=="float")
+					$$->setVariableType("float");
+				else
+					$$->setVariableType("int");
+			}
 		}
      ;
 
@@ -1070,6 +1127,7 @@ unary_expression : ADDOP unary_expression
 
 			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+$2->getName(),"unary_expression");
 			$$=newSymbol;
+			$$->setVariableType($2->getVariableType());
 		}  
 		 | NOT unary_expression 
 		{
@@ -1078,6 +1136,7 @@ unary_expression : ADDOP unary_expression
 
 			SymbolInfo *newSymbol=new SymbolInfo("!"+$2->getName(),"unary_expression");
 			$$=newSymbol;
+			$$->setVariableType($2->getVariableType());
 		}
 		 | factor 
 		{
@@ -1105,6 +1164,13 @@ factor : variable
 			//--------------------------------------------------------------------------
 			//#semantic: calling functions, check the arguments
 			SymbolInfo *func=table.lookUp($1->getName());
+
+			//set the variable type of factor and also current return type
+			if(func) 
+				$$->setVariableType(func->getReturnType()), returnType_curr=func->getReturnType();
+			else
+				$$->setVariableType("func_not_found");
+
 			if(func && func->getIdentity()=="func_defined"){
 				if(func->edge.size()!=arg_list.size()){
 					semanticErr++;
@@ -1119,13 +1185,14 @@ factor : variable
 						if(x)
 						{
 							if(x->getVariableType()!=func->edge[i]->getVariableType() || x->sz!=func->edge[i]->sz){
-								semanticErr++;cout<<"hoy nai\n";
+								semanticErr++;
 								fprintf(error,"semantic error found in line %d: type mismatch, wrong type of argument given\n\n",line);
 								break;
 							}
 						}
 
-						else{
+						//parameter can be CONST_INT or CONST_FLOAT 
+						else if(arg_list[i]->getIdentity()=="var"){
 							semanticErr++;
 							fprintf(error,"semantic error found in line %d: variable '%s' not found\n\n",line,arg_list[i]->getName().c_str());
 							break;
@@ -1173,6 +1240,8 @@ factor : variable
 
 			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+"++","factor");
 			$$=newSymbol;
+
+			$$->setVariableType($1->getVariableType());
 		} 
 	| variable DECOP
 		{
@@ -1181,6 +1250,8 @@ factor : variable
 
 			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+"--","factor");
 			$$=newSymbol;
+
+			$$->setVariableType($1->getVariableType());
 		}
 	;
 	
@@ -1237,6 +1308,7 @@ int main(int argc,char *argv[])
 	isReturning=false;
 	currentFunction=0;
 	cnt_err=0;
+	returnType_curr="none";
 
 	yyparse();
 
@@ -1244,6 +1316,7 @@ int main(int argc,char *argv[])
 	table.PrintAllScopeTable(logout);
 	fprintf(logout,"total lines read: %d\n",line-1);
 	fprintf(logout,"total errors encountered: %d",cnt_err+semanticErr);
+	fprintf(error,"total error encountered: %d",cnt_err+semanticErr);
 
 	fclose(logout);
 	fclose(error);

@@ -1036,6 +1036,11 @@ logic_expression : rel_expression
 			//------------------------------------------------------------------
 			//#semantic: LOGICOP MUST BE INT
 			$$->setVariableType("int");
+
+			if($1->getVariableType()!="int" || $3->getVariableType()!="int"){
+				semanticErr++;
+				fprintf(error,"semantic error found in line %d: type mismatch, operands used with LOGICOP must be of type int\n\n",line);
+			}
 			//------------------------------------------------------------------
 		}
 		 ;
@@ -1058,6 +1063,11 @@ rel_expression : simple_expression
 			//------------------------------------------------------------------
 			//#semantic: RELOP MUST BE INT
 			$$->setVariableType("int");
+
+			if($1->getVariableType()!="int" || $3->getVariableType()!="int"){
+				semanticErr++;
+				fprintf(error,"semantic error found in line %d: type mismatch, operands used with RELOP must be of type int\n\n",line);
+			}
 			//------------------------------------------------------------------
 		}
 		;

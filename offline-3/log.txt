@@ -1,5 +1,5 @@
-line no. 1: type_specifier : VOID
-void
+line no. 1: type_specifier : INT 
+int
 
 line no. 1: type_specifier : INT 
 int
@@ -11,13 +11,117 @@ int a
 # ScopeTable with ID 2 Created #
 ################################
 
-line no. 3: compound_statement : LCURL RCURL
-{}line no. 3: func_definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement
-void func(int a){}
+line no. 2: type_specifier : INT 
+int
+
+line no. 2: declaration_list : ID
+x
+
+line no. 2: var_declaration : type_specifier declaration_list SEMICOLON
+int x;
+
+line no. 2: statement : var_declaration
+int x;
+
+line no. 2: statements : statement
+int x;
+
+line no. 3: variable : ID
+x
+
+line no. 3: factor : CONST_INT
+5
+
+line no. 3: unary_expression : factor
+5
+
+line no. 3: term : unary_expression
+5
+
+line no. 3: simple_expression : term
+5
+
+line no. 3: factor : CONST_FLOAT
+4.5
+
+line no. 3: unary_expression : factor
+4.5
+
+line no. 3: term : unary_expression
+4.5
+
+line no. 3: simple_expression : term
+4.5
+
+line no. 3: rel_expression : simple_expression RELOP simple_expression
+5<4.5
+
+line no. 3: logic_expression : rel_expression
+5<4.5
+
+line no. 3: expression : variable ASSIGNOP logic_expression
+x=5<4.5
+
+line no. 3: expression_statement : expression SEMICOLON
+x=5<4.5;
+
+line no. 3: statement : expression_statement
+x=5<4.5;
+
+line no. 3: statements : statements statement
+int x;
+x=5<4.5;
+
+line no. 4: variable : ID
+a
+
+line no. 4: factor : variable
+a
+
+line no. 4: unary_expression : factor
+a
+
+line no. 4: term : unary_expression
+a
+
+line no. 4: simple_expression : term
+a
+
+line no. 4: rel_expression : simple_expression
+a
+
+line no. 4: logic_expression : rel_expression
+a
+
+line no. 4: expression : logic_expression
+a
+
+line no. 4: statement : RETURN expression SEMICOLON
+return a;
+
+line no. 4: statements : statements statement
+int x;
+x=5<4.5;
+return a;
+
+line no. 5: compound_statement : LCURL statements RCURL
+{
+int x;
+x=5<4.5;
+return a;
+}
+
+line no. 5: func_definition : type_specifier ID LPAREN parameter_list RPAREN compound_statement
+int func(int a){int x;
+x=5<4.5;
+return a;
+}
+
 
 	------------------------------
 	ScopeTable #2
 	1  --> <a, ID> 
+	4  --> <x, ID> 
 	------------------------------
 ------------------------------------------------------------
 	------------------------------
@@ -29,112 +133,71 @@ void func(int a){}
 # ScopeTable with ID 2 Removed #
 ################################
 
-line no. 3: unit : func_declaration
-void func(int a){}
+line no. 5: unit : func_declaration
+int func(int a){int x;
+x=5<4.5;
+return a;
+}
 
-line no. 3: program : unit
-void func(int a){}
 
-line no. 5: type_specifier : VOID
-void
+line no. 5: program : unit
+int func(int a){int x;
+x=5<4.5;
+return a;
+}
+
+
+line no. 7: type_specifier : INT 
+int
 
 ################################
 # ScopeTable with ID 3 Created #
 ################################
 
-line no. 6: type_specifier : INT 
-int
+line no. 8: factor : CONST_INT
+0
 
-line no. 6: declaration_list : ID
-x
+line no. 8: unary_expression : factor
+0
 
-line no. 6: var_declaration : type_specifier declaration_list SEMICOLON
-int x;
+line no. 8: term : unary_expression
+0
 
-line no. 6: statement : var_declaration
-int x;
+line no. 8: simple_expression : term
+0
 
-line no. 6: statements : statement
-int x;
+line no. 8: rel_expression : simple_expression
+0
 
-line no. 7: variable : ID
-x
+line no. 8: logic_expression : rel_expression
+0
 
-line no. 7: factor : CONST_INT
-5
+line no. 8: expression : logic_expression
+0
 
-line no. 7: unary_expression : factor
-5
+line no. 8: statement : RETURN expression SEMICOLON
+return 0;
 
-line no. 7: term : unary_expression
-5
+line no. 8: statements : statement
+return 0;
 
-line no. 7: simple_expression : term
-5
-
-line no. 7: rel_expression : simple_expression
-5
-
-line no. 7: logic_expression : rel_expression
-5
-
-line no. 7: arguments : logic_expression
-5
-
-line no. 7: argument_list : arguments
-5
-
-line no. 7: factor : ID LPAREN argument_list RPAREN
-func(5)
-
-line no. 7: unary_expression : factor
-func(5)
-
-line no. 7: term : unary_expression
-func(5)
-
-line no. 7: simple_expression : term
-func(5)
-
-line no. 7: rel_expression : simple_expression
-func(5)
-
-line no. 7: logic_expression : rel_expression
-func(5)
-
-line no. 7: expression : variable ASSIGNOP logic_expression
-x=func(5)
-
-line no. 7: expression_statement : expression SEMICOLON
-x=func(5);
-
-line no. 7: statement : expression_statement
-x=func(5);
-
-line no. 7: statements : statements statement
-int x;
-x=func(5);
-
-line no. 8: compound_statement : LCURL statements RCURL
+line no. 9: compound_statement : LCURL statements RCURL
 {
-int x;
-x=func(5);
+return 0;
 }
 
-line no. 8: func_definition : type_specifier ID LPAREN RPAREN compound_statement
-void test(){int x;
-x=func(5);
+line no. 9: func_definition : type_specifier ID LPAREN RPAREN compound_statement
+int main(){return 0;
 }
 
 
 	------------------------------
 	ScopeTable #3
-	4  --> <x, ID> 
 	------------------------------
 ------------------------------------------------------------
 	------------------------------
 	ScopeTable #1
-	2  --> <test, ID> 
+	4  --> <main, ID> 
 	5  --> <func, ID> 
 	------------------------------
 ------------------------------------------------------------
@@ -142,481 +205,37 @@ x=func(5);
 # ScopeTable with ID 3 Removed #
 ################################
 
-line no. 8: unit : func_declaration
-void test(){int x;
-x=func(5);
+line no. 9: unit : func_declaration
+int main(){return 0;
 }
 
 
-line no. 8: program : program unit
-void func(int a){}
-void test(){int x;
-x=func(5);
+line no. 9: program : program unit
+int func(int a){int x;
+x=5<4.5;
+return a;
+}
+
+int main(){return 0;
 }
 
 
-line no. 10: type_specifier : INT 
-int
-
-################################
-# ScopeTable with ID 4 Created #
-################################
-
-line no. 11: type_specifier : INT 
-int
-
-line no. 11: declaration_list : ID LTHIRD CONST_INT RTHIRD
-a[2]
-
-line no. 11: declaration_list : declaration_list COMMA ID
-a[2],c
-
-line no. 11: declaration_list : declaration_list COMMA ID
-a[2],c,i
-
-line no. 11: declaration_list : declaration_list COMMA ID
-a[2],c,i,j
-
-line no. 11: var_declaration : type_specifier declaration_list SEMICOLON
-int a[2],c,i,j;
-
-line no. 11: statement : var_declaration
-int a[2],c,i,j;
-
-line no. 11: statements : statement
-int a[2],c,i,j;
-
-line no. 11: type_specifier : FLOAT
-float
-
-line no. 11: declaration_list : ID
-c
-
-line no. 11: var_declaration : type_specifier declaration_list SEMICOLON
-float c;
-
-line no. 11: statement : var_declaration
-float c;
-
-line no. 11: statements : statements statement
-int a[2],c,i,j;
-float c;
-
-line no. 12: factor : CONST_FLOAT
-2.5
-
-line no. 12: unary_expression : factor
-2.5
-
-line no. 12: term : unary_expression
-2.5
-
-line no. 12: simple_expression : term
-2.5
-
-line no. 12: rel_expression : simple_expression
-2.5
-
-line no. 12: logic_expression : rel_expression
-2.5
-
-line no. 12: expression : logic_expression
-2.5
-
-line no. 12: variable : ID LTHIRD expression RTHIRD
-a[2.5]
-
-line no. 12: factor : CONST_INT
-1
-
-line no. 12: unary_expression : factor
-1
-
-line no. 12: term : unary_expression
-1
-
-line no. 12: simple_expression : term
-1
-
-line no. 12: rel_expression : simple_expression
-1
-
-line no. 12: logic_expression : rel_expression
-1
-
-line no. 12: expression : variable ASSIGNOP logic_expression
-a=1
-
-line no. 12: expression_statement : expression SEMICOLON
-a[2]=1;
-
-line no. 12: statement : expression_statement
-a[2]=1;
-
-line no. 12: statements : statements statement
-int a[2],c,i,j;
-float c;
-a[2]=1;
-
-line no. 13: variable : ID
-i
-
-line no. 13: factor : CONST_FLOAT
-2.3
-
-line no. 13: unary_expression : factor
-2.3
-
-line no. 13: term : unary_expression
-2.3
-
-line no. 13: simple_expression : term
-2.3
-
-line no. 13: rel_expression : simple_expression
-2.3
-
-line no. 13: logic_expression : rel_expression
-2.3
-
-line no. 13: expression : variable ASSIGNOP logic_expression
-i=2.3
-
-line no. 13: expression_statement : expression SEMICOLON
-i=2.3;
-
-line no. 13: statement : expression_statement
-i=2.3;
-
-line no. 13: statements : statements statement
-int a[2],c,i,j;
-float c;
-a[2]=1;
-i=2.3;
-
-line no. 14: variable : ID
-j
-
-line no. 14: factor : CONST_INT
-2
-
-line no. 14: unary_expression : factor
-2
-
-line no. 14: term : unary_expression
-2
-
-line no. 14: factor : CONST_FLOAT
-3.7
-
-line no. 14: unary_expression : factor
-3.7
-
-line no. 14: term : term MULOP unary_expression
-2%3.7
-
-line no. 14: simple_expression : term
-2%3.7
-
-line no. 14: rel_expression : simple_expression
-2%3.7
-
-line no. 14: logic_expression : rel_expression
-2%3.7
-
-line no. 14: expression : variable ASSIGNOP logic_expression
-j=2%3.7
-
-line no. 14: expression_statement : expression SEMICOLON
-j=2%3.7;
-
-line no. 14: statement : expression_statement
-j=2%3.7;
-
-line no. 14: statements : statements statement
-int a[2],c,i,j;
-float c;
-a[2]=1;
-i=2.3;
-j=2%3.7;
-
-line no. 15: variable : ID
-a
-
-line no. 15: factor : CONST_INT
-4
-
-line no. 15: unary_expression : factor
-4
-
-line no. 15: term : unary_expression
-4
-
-line no. 15: simple_expression : term
-4
-
-line no. 15: rel_expression : simple_expression
-4
-
-line no. 15: logic_expression : rel_expression
-4
-
-line no. 15: expression : variable ASSIGNOP logic_expression
-a=4
-
-line no. 15: expression_statement : expression SEMICOLON
-a=4;
-
-line no. 15: statement : expression_statement
-a=4;
-
-line no. 15: statements : statements statement
-int a[2],c,i,j;
-float c;
-a[2]=1;
-i=2.3;
-j=2%3.7;
-a=4;
-
-line no. 16: variable : ID
-a
-
-line no. 16: factor : variable
-a
-
-line no. 16: unary_expression : factor
-a
-
-line no. 16: term : unary_expression
-a
-
-line no. 16: simple_expression : term
-a
-
-line no. 16: rel_expression : simple_expression
-a
-
-line no. 16: logic_expression : rel_expression
-a
-
-line no. 16: arguments : logic_expression
-a
-
-line no. 16: argument_list : arguments
-a
-
-line no. 16: factor : ID LPAREN argument_list RPAREN
-func(a)
-
-line no. 16: unary_expression : factor
-func(a)
-
-line no. 16: term : unary_expression
-func(a)
-
-line no. 16: simple_expression : term
-func(a)
-
-line no. 16: rel_expression : simple_expression
-func(a)
-
-line no. 16: logic_expression : rel_expression
-func(a)
-
-line no. 16: expression : logic_expression
-func(a)
-
-line no. 16: expression_statement : expression SEMICOLON
-func(a);
-
-line no. 16: statement : expression_statement
-func(a);
-
-line no. 16: statements : statements statement
-int a[2],c,i,j;
-float c;
-a[2]=1;
-i=2.3;
-j=2%3.7;
-a=4;
-func(a);
-
-line no. 17: variable : ID
-b
-
-line no. 17: factor : CONST_INT
-8
-
-line no. 17: unary_expression : factor
-8
-
-line no. 17: term : unary_expression
-8
-
-line no. 17: simple_expression : term
-8
-
-line no. 17: rel_expression : simple_expression
-8
-
-line no. 17: logic_expression : rel_expression
-8
-
-line no. 17: expression : variable ASSIGNOP logic_expression
-b=8
-
-line no. 17: expression_statement : expression SEMICOLON
-b=8;
-
-line no. 17: statement : expression_statement
-b=8;
-
-line no. 17: statements : statements statement
-int a[2],c,i,j;
-float c;
-a[2]=1;
-i=2.3;
-j=2%3.7;
-a=4;
-func(a);
-b=8;
-
-line no. 18: factor : CONST_INT
-0
-
-line no. 18: unary_expression : factor
-0
-
-line no. 18: term : unary_expression
-0
-
-line no. 18: simple_expression : term
-0
-
-line no. 18: rel_expression : simple_expression
-0
-
-line no. 18: logic_expression : rel_expression
-0
-
-line no. 18: expression : logic_expression
-0
-
-line no. 18: statement : RETURN expression SEMICOLON
-return 0;
-
-line no. 18: statements : statements statement
-int a[2],c,i,j;
-float c;
-a[2]=1;
-i=2.3;
-j=2%3.7;
-a=4;
-func(a);
-b=8;
-return 0;
-
-line no. 19: compound_statement : LCURL statements RCURL
-{
-int a[2],c,i,j;
-float c;
-a[2]=1;
-i=2.3;
-j=2%3.7;
-a=4;
-func(a);
-b=8;
-return 0;
+line no. 10: start : program
+int func(int a){int x;
+x=5<4.5;
+return a;
 }
 
-line no. 19: func_definition : type_specifier ID LPAREN RPAREN compound_statement
-int main(){int a[2],c,i,j;
-float c;
-a[2]=1;
-i=2.3;
-j=2%3.7;
-a=4;
-func(a);
-b=8;
-return 0;
-}
-
-
-	------------------------------
-	ScopeTable #4
-	0  --> <j, ID> 
-	1  --> <a, ID> 
-	3  --> <c, ID> 
-	9  --> <i, ID> 
-	------------------------------
-------------------------------------------------------------
-	------------------------------
-	ScopeTable #1
-	2  --> <test, ID> 
-	4  --> <main, ID> 
-	5  --> <func, ID> 
-	------------------------------
-------------------------------------------------------------
-################################
-# ScopeTable with ID 4 Removed #
-################################
-
-line no. 19: unit : func_declaration
-int main(){int a[2],c,i,j;
-float c;
-a[2]=1;
-i=2.3;
-j=2%3.7;
-a=4;
-func(a);
-b=8;
-return 0;
-}
-
-
-line no. 19: program : program unit
-void func(int a){}
-void test(){int x;
-x=func(5);
-}
-
-int main(){int a[2],c,i,j;
-float c;
-a[2]=1;
-i=2.3;
-j=2%3.7;
-a=4;
-func(a);
-b=8;
-return 0;
-}
-
-
-line no. 20: start : program
-void func(int a){}
-void test(){int x;
-x=func(5);
-}
-
-int main(){int a[2],c,i,j;
-float c;
-a[2]=1;
-i=2.3;
-j=2%3.7;
-a=4;
-func(a);
-b=8;
-return 0;
+int main(){return 0;
 }
 
 
 ------------------------------------------------------------
 	------------------------------
 	ScopeTable #1
-	2  --> <test, ID> 
 	4  --> <main, ID> 
 	5  --> <func, ID> 
 	------------------------------
 ------------------------------------------------------------
-total lines read: 19
-total errors encountered: 10
+total lines read: 9
+total errors encountered: 1

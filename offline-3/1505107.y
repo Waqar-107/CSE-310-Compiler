@@ -16,27 +16,33 @@ int yylex(void);
 
 int cnt_err, semanticErr=0;
 extern int line;
+
 string variable_type;
+string codes;
 
 extern FILE *yyin;
 FILE *logout,*error;
 
 SymbolTable table(10);
+SymbolInfo *currentFunction;
 
-string codes;
 vector<string> code_list;
 vector<string> statement_list;
 vector<SymbolInfo*> params;
 vector<SymbolInfo*> var_list;
-SymbolInfo *currentFunction;
+vector<SymbolInfo*> arg_list;
+
 bool isReturning;
 
-void yyerror(const char *s) {
+void yyerror(const char *s)
+{
 	cnt_err++;
 	fprintf(error,"syntax error \"%s\" Found on Line %d (Error no.%d)\n",s,line,cnt_err);
 }
 
-string stoi(int n){
+
+string stoi(int n)
+{
 	string temp;
 	while(n){
 		int r=n%10;
@@ -48,8 +54,9 @@ string stoi(int n){
 	return temp;
 }
 
-void fillScopeWithParams(){
-	
+
+void fillScopeWithParams()
+{	
 	for(int i=0;i<params.size();i++)
 	{
 		if(!table.Insert(params[i]->getName(),"ID",logout)){
@@ -166,7 +173,6 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 
 				for(int i=0;i<$4->edge.size();i++){
 					x->edge.push_back($4->edge[i]);
-					x->edge[i]->setIdentity("params");
 				}
 			}
 
@@ -283,7 +289,8 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 							}
 						}
 
-						if(f){
+						if(f)
+						{
 							//match return type
 							if(x->getReturnType()==$1->getType()){
 								//already inserted and parameters matched, edit it
@@ -292,6 +299,7 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 
 								for(int i=0;i<var_list.size();i++){
 									x->edge.push_back(var_list[i]);
+									//cout<<"in func "<<var_list[i]->getIdentity()<<endl;
 								}
 
 								currentFunction=x;cout<<var_list.size()<<" "<<$2->getName()<<endl;
@@ -439,7 +447,7 @@ parameter_list : parameter_list COMMA type_specifier ID
 			fprintf(logout,"line no. %d: parameter_list : parameter_list COMMA type_specifier ID\n",line);
 
 			$$->edge.push_back(new SymbolInfo($4->getName(),$3->getType()));
-			$$->edge[$$->edge.size()-1]->setIdentity("param");
+			$$->edge[$$->edge.size()-1]->setIdentity("var");
 
 			for(int i=0;i<$$->edge.size();i++){
 				fprintf(logout,"%s %s",$$->edge[i]->getType().c_str(),$$->edge[i]->getName().c_str());
@@ -488,7 +496,7 @@ parameter_list : parameter_list COMMA type_specifier ID
 
 			//edge is the list or parameters where each parameter has id-name and type
 			$$->edge.push_back(new SymbolInfo($2->getName(),$1->getType()));
-			$$->edge[$$->edge.size()-1]->setIdentity("param");
+			$$->edge[$$->edge.size()-1]->setIdentity("var");
 
 			fprintf(logout,"%s %s\n\n",$1->getType().c_str(),$2->getName().c_str());
 
@@ -609,16 +617,21 @@ type_specifier : INT
 declaration_list : declaration_list COMMA ID
 		{
 			fprintf(logout,"line no. %d: declaration_list : declaration_list COMMA ID\n",line);
+			
+			$3->setIdentity("var");
 			$$->edge.push_back($3);
 
 			//print the declaration_list
-			for(int i=0;i<$$->edge.size();i++){
+			for(int i=0;i<$$->edge.size();i++)
+			{
 				fprintf(logout,"%s",$$->edge[i]->getName().c_str());
+
 				if($$->edge[i]->sz>0)
 					fprintf(logout,"[%d]",$$->edge[i]->sz);
 				
 				if(i<$$->edge.size()-1)
 					fprintf(logout,",");
+
 				else
 					fprintf(logout,"\n\n");
 			}
@@ -630,7 +643,8 @@ declaration_list : declaration_list COMMA ID
  				semanticErr++;
  			}
 
- 			else {
+ 			else
+ 			{
  				//insert in SymbolTable directly if not declared before
  				if(!table.Insert($3->getName(),"ID",logout)) {
  					fprintf(error,"semantic error found at line %d: variable \'%s\' declared before\n\n",line,$1->getName().c_str());
@@ -657,6 +671,8 @@ declaration_list : declaration_list COMMA ID
 			}
 
 			fprintf(logout,"%s[%s]\n\n",$3->getName().c_str(),$5->getName());
+
+			$3->setIdentity("arr");
 			$$->edge.push_back($3);
  			
 
@@ -667,7 +683,8 @@ declaration_list : declaration_list COMMA ID
  				semanticErr++;
  			}
 
- 			else {
+ 			else 
+ 			{
  				//insert in SymbolTable directly if not declared before
  				if(!table.Insert($3->getName(),"ID",logout)) {
  					fprintf(error,"semantic error found at line %d: variable %s declared before\n\n",line,$1->getName().c_str());
@@ -695,6 +712,7 @@ declaration_list : declaration_list COMMA ID
 
  			SymbolInfo *newSymbol = new SymbolInfo("declaration_list");
  			$$ = newSymbol;
+ 			$$->setIdentity("var");
  			$$->edge.push_back($1);
 
  			//---------------------------------------------------------------------------
@@ -726,7 +744,8 @@ declaration_list : declaration_list COMMA ID
  			fprintf(logout,"%s[%s]\n\n",$1->getName().c_str(),$3->getName().c_str());
 
  			SymbolInfo *x = new SymbolInfo("declaration_list");
- 			$$ = x;
+ 			$$ = x;$$->setIdentity("arr");
+
  			$1->sz=atoi($3->getName().c_str());
  			$$->edge.push_back($1);
 
@@ -737,7 +756,8 @@ declaration_list : declaration_list COMMA ID
  				semanticErr++;
  			}
 
- 			else {
+ 			else 
+ 			{
  				//insert in SymbolTable directly if not declared before
  				if(!table.Insert($1->getName(),"ID",logout)) {
  					fprintf(error,"semantic error found at line %d: variable %s declared before\n\n",line,$1->getName().c_str());
@@ -1081,6 +1101,46 @@ factor : variable
 
 			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+"("+$3->getName()+")","factor");
 			$$=newSymbol;
+
+			//--------------------------------------------------------------------------
+			//#semantic: calling functions, check the arguments
+			SymbolInfo *func=table.lookUp($1->getName());
+			if(func && func->getIdentity()=="func_defined"){
+				if(func->edge.size()!=arg_list.size()){
+					semanticErr++;
+					fprintf(error,"semantic error found in line %d: argument list didn't match, wrong number of arguments\n\n",line);
+				}
+
+				else
+				{
+					for(int i=0;i<func->edge.size();i++)
+					{
+						SymbolInfo *x=table.lookUp(arg_list[i]->getName());
+						if(x)
+						{
+							if(x->getVariableType()!=func->edge[i]->getVariableType() || x->sz!=func->edge[i]->sz){
+								semanticErr++;cout<<"hoy nai\n";
+								fprintf(error,"semantic error found in line %d: type mismatch, wrong type of argument given\n\n",line);
+								break;
+							}
+						}
+
+						else{
+							semanticErr++;
+							fprintf(error,"semantic error found in line %d: variable '%s' not found\n\n",line,arg_list[i]->getName().c_str());
+							break;
+						}
+					}
+				}
+			}
+
+			else{
+				semanticErr++;
+				fprintf(error,"semantic error found in line %d: function named '%s' not defined\n\n",line,$1->getName().c_str());
+			}
+			//--------------------------------------------------------------------------
+
+			arg_list.clear();
 		}
 	| LPAREN expression RPAREN
 		{
@@ -1127,7 +1187,7 @@ factor : variable
 argument_list : arguments
 		{
 			fprintf(logout,"line no. %d: argument_list : arguments\n",line);
-			fprintf(logout,"%s\n",$1->getName().c_str());
+			fprintf(logout,"%s\n\n",$1->getName().c_str());
 
 			SymbolInfo *newSymbol=new SymbolInfo($1->getName(),"argument_list");
 			$$=newSymbol;
@@ -1142,14 +1202,16 @@ arguments : arguments COMMA logic_expression
 
 			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+","+$3->getName(),"arguments");
 			$$=newSymbol;
+
+			arg_list.push_back($3);
 		}
 	      | logic_expression
 	    {
 			fprintf(logout,"line no. %d: arguments : logic_expression\n",line);
 			fprintf(logout,"%s\n\n",$1->getName().c_str());
 
-			SymbolInfo *newSymbol=new SymbolInfo($1->getName(),"arguments");
-			$$=newSymbol;
+			$$=$1;
+			arg_list.push_back($$);
 		}
 	      ;
 

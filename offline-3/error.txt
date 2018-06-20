@@ -1,12 +1,14 @@
-semantic error found in line 4: array index error
+semantic error found in line 8: type mismatch, wrong type of argument given
 
-semantic error found at line 9: variable c declared before
+semantic error found at line 12: variable c declared before
 
-semantic error found in line 10: type mismatch, array index must be integer
+semantic error found in line 13: type mismatch, array index must be integer
 
-semantic error found in line 12: type mismatch, mod operation is only possible with integer operands
+semantic error found in line 15: type mismatch, mod operation is only possible with integer operands
 
-semantic error found in line 13: array index error
+semantic error found in line 16: array index error
 
-semantic error found in line 15: variable 'b' not declared in this scope
+semantic error found in line 17: type mismatch, wrong type of argument given
+
+semantic error found in line 18: variable 'b' not declared in this scope
 

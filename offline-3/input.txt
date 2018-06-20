@@ -1,8 +1,11 @@
-int func(int a);
+int x[10];
+
 int func(int a){
-	int x;
-	x[1]=9;
 	return a;
+}
+
+void test(){
+	func(x);
 }
 
 int main(){

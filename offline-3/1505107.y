@@ -20,6 +20,7 @@ extern int line;
 string variable_type;
 string codes;
 string returnType_curr;
+string isReturningType;
 
 extern FILE *yyin;
 FILE *logout,*error;
@@ -254,6 +255,14 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 			else if(!isReturning && $1->getType()!="void"){
 				semanticErr++;
 				fprintf(error,"semantic error found in line %d: missing return statement\n\n",line);
+			}
+
+			else{
+				//check if function is returning the right type of variable
+				if(isReturningType!=$1->getType()){
+					semanticErr++;
+					fprintf(logout,"semantic error found in line %d: return type didn't match\n\n",line);
+				}
 			}
 
 			isReturning=false;
@@ -867,6 +876,7 @@ statement : var_declaration
 			fprintf(logout,"line no. %d: statement : IF LPAREN expression RPAREN statement ELSE statement\n\n",line);
 			
 			codes+="if(";codes+=$3->getName();
+			codes+=")else";codes+=$7->getName();
 			fprintf(logout,"%s\n\n",codes.c_str());
 
 			SymbolInfo *newSymbol=new SymbolInfo(codes,"statement");
@@ -902,6 +912,7 @@ statement : var_declaration
 			$$=newSymbol;
 
 			isReturning=true;
+			isReturningType=$2->getVariableType();
 		}
 	  ;
 	  
@@ -931,6 +942,19 @@ variable : ID
 
 			$$=$1;
 			$$->setIdentity("var");
+
+			//--------------------------------------------------
+			//#semantic: see if variable has been declared
+			SymbolInfo *x=table.lookUp($1->getName());
+			if(!x){
+				semanticErr++;
+				fprintf(error,"semantic error found in line %d: variable '%s' not declared in this scope\n\n",line,$1->getName().c_str());
+			}
+
+			else{
+				$$->setVariableType(x->getVariableType());
+			}
+			//--------------------------------------------------
 		} 		
 	 | ID LTHIRD expression RTHIRD 
 		{
@@ -944,12 +968,25 @@ variable : ID
 			$$->sz=atoi($3->getName().c_str());
 
 			//--------------------------------------------------------------------------
-			//#semantic: type checking, expression must be int
+			//#semantic: type checking, expression must be int, e.g: a[5.6]
 			if($3->getVariableType()!="int"){
 				semanticErr++;
 				fprintf(error,"semantic error found in line %d: type mismatch, array index must be integer\n\n",line);
 			}
 			//--------------------------------------------------------------------------
+
+			//--------------------------------------------------
+			//#semantic: see if variable has been declared
+			SymbolInfo *x=table.lookUp($1->getName());
+			if(!x){
+				semanticErr++;
+				fprintf(error,"semantic error found in line %d: variable '%s' not declared in this scope\n\n",line,$1->getName().c_str());
+			}
+
+			else{
+				$$->setVariableType(x->getVariableType());
+			}
+			//--------------------------------------------------
 		}
 	 ;
 	 
@@ -1004,7 +1041,7 @@ variable : ID
 			{
 				if(x->getVariableType()!=$3->getVariableType()){
 					semanticErr++;
-					fprintf(error,"semantic error found in line %d: type mismatch, '%s' assigned to '%s' \n\n",line,$3->getVariableType().c_str(),x->getVariableType().c_str());
+					fprintf(error,"semantic error found in line %d: type mismatch in assignment \n\n",line,$3->getVariableType().c_str(),x->getVariableType().c_str());
 				}
 			}
 			//---------------------------------------------------------------------------
@@ -1216,6 +1253,7 @@ factor : variable
 			
 			SymbolInfo *newSymbol=new SymbolInfo("("+$2->getName()+")","factor");
 			$$=newSymbol;
+			$$->setVariableType($2->getVariableType());
 		}
 	| CONST_INT
 		{
@@ -1260,10 +1298,13 @@ argument_list : arguments
 			fprintf(logout,"line no. %d: argument_list : arguments\n",line);
 			fprintf(logout,"%s\n\n",$1->getName().c_str());
 
-			SymbolInfo *newSymbol=new SymbolInfo($1->getName(),"argument_list");
-			$$=newSymbol;
+			$$=$1;
+			$$->setType("argument_list");
 		}
-	|{}
+	|{
+		SymbolInfo *newSymbol=new SymbolInfo("","argument_list");
+		$$=newSymbol;
+	 }
 			  ;
 	
 arguments : arguments COMMA logic_expression

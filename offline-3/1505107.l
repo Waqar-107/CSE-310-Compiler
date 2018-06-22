@@ -269,12 +269,10 @@ UNFINISHED_STRING (\"([^\"\n]|\\[\n])*)
 
 {SINGLE_LINE_COMMENT} {
 	countNewlineInComment(yytext);
-	return COMMENT;
 }
 
 {MULTILINE_COMMENT} {
 	countNewlineInComment(yytext);
-	return COMMENT;
 }
 
 {BREAK} {
@@ -438,7 +436,6 @@ UNFINISHED_STRING (\"([^\"\n]|\\[\n])*)
 
 {STRING} {
 	processString(yytext);
-	return STRING;
 }
 
 {IDENTIFIER} {

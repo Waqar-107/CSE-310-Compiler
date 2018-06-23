@@ -228,6 +228,10 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 			codes+=$2->getName(); codes+="(";
 			for(int i=0;i<$4->edge.size();i++){
 				codes+=$4->edge[i]->getType()+" "+$4->edge[i]->getName();
+
+				if(i<$4->edge.size()-1){
+					codes+=",";
+				}
 			}
 
 			codes+=")";
@@ -827,25 +831,21 @@ statement : var_declaration
 			fprintf(logout,"line no. %d: statement : var_declaration\n",line);
 			fprintf(logout,"%s\n\n",$1->getName().c_str());
 
-			SymbolInfo *newSymbol=new SymbolInfo($1->getName(),"statement");
-			$$=newSymbol;
+			$$=$1;
 		}
 	  | expression_statement
 	  	{
 			fprintf(logout,"line no. %d: statement : expression_statement\n",line);
 			fprintf(logout,"%s\n\n",$1->getName().c_str());
 
-			SymbolInfo *newSymbol=new SymbolInfo($1->getName(),"statement");
-			$$=newSymbol;
-			$$->setVariableType($1->getVariableType());
+			$$=$1;
 		}
 	  | compound_statement
 	  	{
 			fprintf(logout,"line no. %d: statement : compound_statement\n",line);
 			fprintf(logout,"%s\n\n",$1->getName().c_str());
 
-			SymbolInfo *newSymbol=new SymbolInfo($1->getName(),"statement");
-			$$=newSymbol;
+			$$=$1;
 		}
 	  | FOR LPAREN expression_statement expression_statement expression RPAREN statement
 	  	{
@@ -875,12 +875,14 @@ statement : var_declaration
 	  	{
 			fprintf(logout,"line no. %d: statement : IF LPAREN expression RPAREN statement ELSE statement\n\n",line);
 			
-			codes+="if(";codes+=$3->getName();
-			codes+=")else";codes+=$7->getName();
+			codes="if(";codes+=$3->getName();
+			codes+=")";codes+=$5->getName();codes+="else";codes+=$7->getName();
 			fprintf(logout,"%s\n\n",codes.c_str());
 
 			SymbolInfo *newSymbol=new SymbolInfo(codes,"statement");
 			$$=newSymbol;
+
+			
 		}
 	  | WHILE LPAREN expression RPAREN statement
 		{

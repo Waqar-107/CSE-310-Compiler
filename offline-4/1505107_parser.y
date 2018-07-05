@@ -120,8 +120,61 @@ string newTemp()
 start : program {
 		 	$$=$1;
 
-		 	if(!semanticErr && !cnt_err){
-		 		//initialize the asm codes, variables and stack
+		 	if(!semanticErr && !cnt_err)
+		 	{
+		 		//init
+		 		string init=".MODEL SMALL\nSTACK 100H\n";
+		 		
+		 		init+=".DATA\n";
+		 		
+		 		//variables
+
+		 		init+=".CODE\n";
+
+		 		//function for PRINTLN
+		 		init+="PRINT_ID PROC\n\n";
+		 		init+="\t;SAVE IN STACK\n";
+		 		init+="\tPUSH AX\n";
+		 		init+="\tPUSH BX\n";
+		 		init+="\tPUSH CX\n";
+		 		init+="\tPUSH DX\n\n";
+		 		init+="\t;CHECK IF NEGATIVE\n";
+		 		init+="\tOR AX, AX\n";
+		 		init+="\tJGE PRINT_NUMBER\n\n";
+		 		init+="\t;PRINT MINUS SIGN\n";
+		 		init+="\tPUSH AX\n";
+		 		init+="\tMOV AH, 2\n";
+		 		init+="\tMOV DL, '-'\n";
+		 		init+="\tINT 21H\n";
+		 		init+="\tPOP AX\n\n";
+		 		init+="\tNEG AX\n\n";
+		 		init+="\tPRINT_NUMBER:\n";
+		 		init+="\tXOR CX, CX\n";
+		 		init+="\tMOV BX, 10D\n\n";
+		 		init+="\tREPEAT:\n\n";
+		 		init+="\t\t;AX:DX- QUOTIENT:REMAINDER\n";
+		 		init+="\t\tXOR DX, DX\n";
+		 		init+="\t\tDIV BX  ;DIVIDE BY 10\n";
+		 		init+="\t\tPUSH DX ;PUSH THE REMAINDER IN STACK\n\n";
+		 		init+="\t\tINC CX\n\n";
+		 		init+="\t\tOR AX, AX\n";
+		 		init+="\t\tJNE REPEAT\n\n";
+
+		 		init+="\tMOV AH, 2\n\n";
+		 		init+="\tPRINT_LOOP:\n";
+		 		init+="\t\tPOP DX\n";
+		 		init+="\t\tADD DL, 30H\n";
+		 		init+="\t\tINT 21H\n";
+		 		init+="\t\tLOOP tPRINT_LOOP\n";
+
+		 		init+="\tPOP AX\n";
+		 		init+="\tPOP BX\n";
+		 		init+="\tPOP CX\n";
+		 		init+="\tPOP DX\n\n";
+		 		init+="\tRET\n";
+		 		init+="PRINT_ID ENDP\n\n";
+
+		 		fprintf(asmCode,"%s",init.c_str());
 		 	}
 		}
 	;
@@ -148,8 +201,6 @@ unit : var_declaration {
      
 func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 		{
-			fprintf(logout,"line no. %d: func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON\n",line);
-			
 			//int foo(int a,float b);
 			if(!table.Insert($2->getName(),"ID",logout)){
 				semanticErr++;
@@ -751,7 +802,11 @@ statement : var_declaration
 		}
 	  | PRINTLN LPAREN ID RPAREN SEMICOLON
 	  	{
-			
+	  		SymbolInfo *temp=new SymbolInfo("println","statement");
+	  		$$=temp;
+	  		
+			assemblyCodes="MOV AX, "+$3->getName();
+			assemblyCodes+=("\tCALL PRINT_ID\n");
 		}
 	  | RETURN expression SEMICOLON
 	    {

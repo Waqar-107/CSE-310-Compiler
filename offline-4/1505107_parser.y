@@ -630,7 +630,8 @@ type_specifier : INT
 declaration_list : declaration_list COMMA ID
 		{
 			//---------------------------------------------------------------------
- 			variableListForInit.push_back({$3->getName(),"0"});
+			//code generation
+ 			variableListForInit.push_back({$3->getName()+stoi(table.getCurrentID()),"0"});
  			//---------------------------------------------------------------------
 
 			$3->setIdentity("var");
@@ -666,7 +667,8 @@ declaration_list : declaration_list COMMA ID
  		  | declaration_list COMMA ID LTHIRD CONST_INT RTHIRD
  		{
  			//---------------------------------------------------------------------
- 			variableListForInit.push_back({$3->getName(),$5->getName()});
+ 			//code generation
+ 			variableListForInit.push_back({$3->getName()+stoi(table.getCurrentID()),$5->getName()});
  			//---------------------------------------------------------------------
  			
 			$3->setIdentity("arr");
@@ -707,7 +709,8 @@ declaration_list : declaration_list COMMA ID
  		  | ID
  		{
  			//---------------------------------------------------------------------
- 			variableListForInit.push_back({$1->getName(),"0"});
+			//code generation
+ 			variableListForInit.push_back({$3->getName()+stoi(table.getCurrentID()),"0"});
  			//---------------------------------------------------------------------
 
  			SymbolInfo *newSymbol = new SymbolInfo("declaration_list");
@@ -744,7 +747,8 @@ declaration_list : declaration_list COMMA ID
  		  | ID LTHIRD CONST_INT RTHIRD
  		{
  			//---------------------------------------------------------------------
- 			variableListForInit.push_back({$1->getName(),$3->getName()});
+ 			//code generation
+ 			variableListForInit.push_back({$3->getName()+stoi(table.getCurrentID()),$5->getName()});
  			//---------------------------------------------------------------------
  			
  			SymbolInfo *x = new SymbolInfo("declaration_list");

@@ -28,12 +28,12 @@ FILE *error,*asmCode,*optimized_asmCode;
 SymbolTable table(10);
 SymbolInfo *currentFunction;
 
-vector<string> code_list;
 vector<string> statement_list;
 
 vector<SymbolInfo*> params;
 vector<SymbolInfo*> var_list;
 vector<SymbolInfo*> arg_list;
+vector<pair<string,string>> variableListForInit;
 
 bool isReturning;
 
@@ -128,6 +128,12 @@ start : program {
 		 		init+=".DATA\n";
 		 		
 		 		//variables
+		 		for(int i=0;i<variableListForInit.size();i++){
+		 			if(variableListForInit[i].second=="0")
+		 				init+=("\t"+variableListForInit[i].first+" DW ?\n");
+		 			else
+		 				init+=("\t"+variableListForInit[i].first+" "+variableListForInit[i].second+" DUP(?)\n");
+		 		}
 
 		 		init+=".CODE\n";
 
@@ -138,6 +144,7 @@ start : program {
 		 		init+="\tPUSH BX\n";
 		 		init+="\tPUSH CX\n";
 		 		init+="\tPUSH DX\n\n";
+
 		 		init+="\t;CHECK IF NEGATIVE\n";
 		 		init+="\tOR AX, AX\n";
 		 		init+="\tJGE PRINT_NUMBER\n\n";
@@ -259,6 +266,25 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 		 
 func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScope(logout);fillScopeWithParams();} compound_statement
 		{
+			//-------------------------------------------------------------------------
+			//assembly code generation
+			assemblyCodes=$2->getName()+" PROC\n\n"
+
+			//if main function then initialize data segment
+			if($2->getName()=="main"){
+				assemblyCodes+=";INITIALIZE DATA SEGMENT\n";
+				assemblyCodes+="\tMOV AX, @DATA\n";
+				assemblyCodes+="\tMOV DS, AX\n\n";
+			}
+
+			if($2->getName()=="main")
+				assemblyCodes+="\tMOV AX, 4CH\nINT 21H\n"
+
+			else
+				assemblyCodes+="RET\n";
+			
+			assemblyCodes+=$2->getName()+" ENDP\n\n"
+			//-------------------------------------------------------------------------
 			codes=$1->getType()+" ";
 			codes+=$2->getName(); codes+="(";
 			for(int i=0;i<$4->edge.size();i++){
@@ -603,6 +629,10 @@ type_specifier : INT
  		
 declaration_list : declaration_list COMMA ID
 		{
+			//---------------------------------------------------------------------
+ 			variableListForInit.push_back({$3->getName(),"0"});
+ 			//---------------------------------------------------------------------
+
 			$3->setIdentity("var");
 			$3->setVariableType(variable_type);
 			
@@ -635,6 +665,10 @@ declaration_list : declaration_list COMMA ID
 		}
  		  | declaration_list COMMA ID LTHIRD CONST_INT RTHIRD
  		{
+ 			//---------------------------------------------------------------------
+ 			variableListForInit.push_back({$3->getName(),$5->getName()});
+ 			//---------------------------------------------------------------------
+ 			
 			$3->setIdentity("arr");
 			$3->setVariableType(variable_type);
 
@@ -672,6 +706,10 @@ declaration_list : declaration_list COMMA ID
  		}
  		  | ID
  		{
+ 			//---------------------------------------------------------------------
+ 			variableListForInit.push_back({$1->getName(),"0"});
+ 			//---------------------------------------------------------------------
+
  			SymbolInfo *newSymbol = new SymbolInfo("declaration_list");
  			$$ = newSymbol;
 
@@ -705,6 +743,10 @@ declaration_list : declaration_list COMMA ID
  		}
  		  | ID LTHIRD CONST_INT RTHIRD
  		{
+ 			//---------------------------------------------------------------------
+ 			variableListForInit.push_back({$1->getName(),$3->getName()});
+ 			//---------------------------------------------------------------------
+ 			
  			SymbolInfo *x = new SymbolInfo("declaration_list");
  			$$ = x;$$->setIdentity("declaration_list");
 

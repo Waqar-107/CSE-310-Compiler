@@ -182,6 +182,7 @@ start : program {
 		 		init+="PRINT_ID ENDP\n\n";
 
 		 		fprintf(asmCode,"%s",init.c_str());
+		 		fprintf(asmCode,"%s",$$->getCode().c_str());
 		 	}
 		}
 	;
@@ -223,17 +224,8 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 					x->edge.push_back($4->edge[i]);
 				}
 			}
-
-			codes="";
-			codes+=($1->getType()+" "+$2->getName()+"(");
-			for(int i=0;i<$4->edge.size();i++){
-				codes+=($4->edge[i]->getType()+" "+$4->edge[i]->getName());
-				if(i<$4->edge.size()-1)
-					codes+=",";
-			}
-			codes+=");";
 			
-			SymbolInfo *newSymbol=new SymbolInfo(codes,"func_declaration");
+			SymbolInfo *newSymbol=new SymbolInfo("function - "+$2->getName(),"func_declaration");
 			$$=newSymbol;
 
 			params.clear();
@@ -252,10 +244,8 @@ func_declaration : type_specifier ID LPAREN parameter_list RPAREN SEMICOLON
 				x->setIdentity("function_declaration");
 			}
 			
-			codes="";
-			codes+=($1->getType()+" "+$2->getName()+"();");
-
-			SymbolInfo *newSymbol=new SymbolInfo(codes,"func_declaration");
+		
+			SymbolInfo *newSymbol=new SymbolInfo("function - "+$2->getName(),"func_declaration");
 			$$=newSymbol;
 		}
 		;
@@ -268,11 +258,15 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 
 			//if main function then initialize data segment
 			if($2->getName()=="main"){
-				assemblyCodes+=";INITIALIZE DATA SEGMENT\n";
+				assemblyCodes+="\t;INITIALIZE DATA SEGMENT\n";
 				assemblyCodes+="\tMOV AX, @DATA\n";
 				assemblyCodes+="\tMOV DS, AX\n\n";
 			}
 
+			//function body
+			assemblyCodes+=$7->getCode();
+
+			//ending of function
 			if($2->getName()=="main")
 				assemblyCodes+="\tMOV AX, 4CH\nINT 21H\n";
 
@@ -281,17 +275,11 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 			
 			assemblyCodes+=$2->getName()+" ENDP\n\n";
 			//-------------------------------------------------------------------------
-			codes=$1->getType()+" ";
-			codes+=$2->getName(); codes+="(";
-			for(int i=0;i<$4->edge.size();i++){
-				codes+=$4->edge[i]->getType()+" "+$4->edge[i]->getName();
-			}
+			
 
-			codes+=")";
-			codes+=$7->getName();
-
-			SymbolInfo *newSymbol=new SymbolInfo(codes,"func_definition");
+			SymbolInfo *newSymbol=new SymbolInfo("function - "+$2->getName(),"func_definition");
 			$$=newSymbol;
+			$$->setCode(assemblyCodes);
 
 			//------------------------------------------
 			//current scope obtained, insert the function in the global scope
@@ -398,11 +386,35 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 		}
 		| type_specifier ID LPAREN RPAREN{table.EnterScope();} compound_statement
 		{
-			codes=$1->getType()+" ";
-			codes+=$2->getName();codes+="()";codes+=$6->getName();
+			
+			//-------------------------------------------------------------------------
+			//assembly code generation
+			assemblyCodes=$2->getName()+" PROC\n\n";
 
-			SymbolInfo *newSymbol=new SymbolInfo(codes,"func_definition");
+			//if main function then initialize data segment
+			if($2->getName()=="main"){
+				assemblyCodes+="\t;INITIALIZE DATA SEGMENT\n";
+				assemblyCodes+="\tMOV AX, @DATA\n";
+				assemblyCodes+="\tMOV DS, AX\n\n";
+			}
+
+			//function body
+			assemblyCodes+=$6->getCode();
+
+			//ending of function
+			if($2->getName()=="main")
+				assemblyCodes+="\tMOV AX, 4CH\nINT 21H\n";
+
+			else
+				assemblyCodes+="RET\n";
+			
+			assemblyCodes+=$2->getName()+" ENDP\n\n";
+			//-------------------------------------------------------------------------
+			
+
+			SymbolInfo *newSymbol=new SymbolInfo("function - "+$2->getName(),"func_definition");
 			$$=newSymbol;
+			$$->setCode(assemblyCodes);
 
 			//------------------------------------------
 			//current scope obtained, insert the function in the global scope
@@ -540,16 +552,11 @@ parameter_list : parameter_list COMMA type_specifier ID
  		
 compound_statement : LCURL statements RCURL
 		{
-			for(int i=0;i<$2->edge.size();i++){
-				codes+=$2->edge[i]->getName()+"\n" ;
-			}
-
-			SymbolInfo *newSymbol=new SymbolInfo(codes,"compound_statement");
-			$$=newSymbol;
+			$$=$2;
 		}
  		    | LCURL RCURL
  		{
-			SymbolInfo *newSymbol=new SymbolInfo("{}","compound_statement");
+			SymbolInfo *newSymbol=new SymbolInfo("compound_statement","dummy");
 			$$=newSymbol;
 		}
  		    ;
@@ -763,52 +770,82 @@ declaration_list : declaration_list COMMA ID
  		  
 statements : statement
 		{
-			SymbolInfo *newSymbol=new SymbolInfo("statements","statements");
-			newSymbol->edge.push_back($1);
-			$$=newSymbol;
+			$$=$1;
 		}
 	   | statements statement
 	    {
-			$1->edge.push_back($2);
 			$$=$1;
+			$$->setCode($$->getCode()+$2->getCode());
 		}
 	   ;
 	   
-statement : var_declaration
-		{
+statement : var_declaration {
 			$$=$1;
 		}
-	  | expression_statement
-	  	{
+	  | expression_statement {
 			$$=$1;
 		}
-	  | compound_statement
-	  	{
+	  | compound_statement {
 			$$=$1;
 		}
 	  | FOR LPAREN expression_statement expression_statement expression RPAREN statement
 	  	{
-			codes="for(";codes+=($3->getName()+$4->getName()+$5->getName());
-			codes+=")";codes+=$7->getName();
+			$$=$3;
 
-			SymbolInfo *newSymbol=new SymbolInfo(codes,"statement");
-			$$=newSymbol;
+			string label1=newLabel(), label2=newLabel();
+			
+			assemblyCodes=$$->getCode();
+			assemblyCodes+=(label1+":\n");	//REPEAT
+			
+			assemblyCodes+=$4->getCode();
+			
+			assemblyCodes+=("\tMOV AX, "+$4->getName()+"\n");
+			assemblyCodes+="\tCMP AX, 0\n";
+			assemblyCodes+="\tJE label2\n";
+
+			assemblyCodes+=$7->getCode();
+			assemblyCodes+=$5->getCode();
+			assemblyCodes+="\tJMP label1\n";
+			
+			assemblyCodes+=("\t"+label2+":\n");
+
+			$$->setCode(assemblyCodes);
 		}
 	  | IF LPAREN expression RPAREN statement %prec LOWER_THAN_ELSE
 	  	{
-			codes="if(";codes+=$3->getName();
-			codes+=")";codes+=$5->getName();
+			$$=$3;
+	
+			string label=newLabel();
 			
-			SymbolInfo *newSymbol=new SymbolInfo(codes,"statement");
-			$$=newSymbol;
+			assemblyCodes=$$->getCode();
+			assemblyCodes+=("\tMOV AX, "+$3->getName()+"\n");
+			assemblyCodes+="\tCMP AX, 0\n";
+			assemblyCodes+=("\tJE "+label+"\n");
+			assemblyCodes+=$5->getCode();
+			assemblyCodes+=("\t"+label+":\n");
+					
+			$$->setCode(assemblyCodes);		
+			$$->setName("statement");$$->setType("if");	//for debugging purpose
 		}
 	  | IF LPAREN expression RPAREN statement ELSE statement
 	  	{
-			codes="if(";codes+=$3->getName();
-			codes+=")";codes+=$5->getName();codes+="else";codes+=$7->getName();
-			
-			SymbolInfo *newSymbol=new SymbolInfo(codes,"statement");
-			$$=newSymbol;
+			$$=$3;
+
+			string else_condition=newLabel();
+			string after_else=newLabel();
+
+			assemblyCodes=$$->getCode();
+			assemblyCodes+=("\tMOV AX, "+$3->getName()+"\n");
+			assemblyCodes+="\tCMP AX, 0\n";
+			assemblyCodes+=("\tJE "+else_condition+"\n");		//false, jump to else
+			assemblyCodes+=$5->getCode();					//true
+			assemblyCodes+=("\tJMP "+after_else);
+			assemblyCodes+=("\n\t"+else_condition+":\n");
+			assemblyCodes+=$7->getCode();
+			assemblyCodes+=("\n\t"+after_else+":\n");
+
+			$$->setCode(assemblyCodes);
+			$$->setName("statement");$$->setType("if-else if");
 		}
 	  | WHILE LPAREN expression RPAREN statement
 		{
@@ -820,20 +857,16 @@ statement : var_declaration
 		}
 	  | PRINTLN LPAREN ID RPAREN SEMICOLON
 	  	{
-	  		SymbolInfo *temp=new SymbolInfo("println","statement");
-	  		$$=temp;
+	  		$$=new SymbolInfo("println","nonterminal");
 	  		
-			assemblyCodes="MOV AX, "+$3->getName();
+			assemblyCodes=("\tMOV AX, "+$3->getName()+"\n");
 			assemblyCodes+=("\tCALL PRINT_ID\n");
+
+			$$->setCode(assemblyCodes);
 		}
 	  | RETURN expression SEMICOLON
 	    {
-			codes="return ";
-			codes+=$2->getName();
-			codes+=";";
-
-			SymbolInfo *newSymbol=new SymbolInfo(codes,"statement");
-			$$=newSymbol;
+			$$=new SymbolInfo(codes,"statement");
 
 			isReturning=true;
 			isReturningType=$2->getVariableType();
@@ -1070,6 +1103,15 @@ unary_expression : ADDOP unary_expression
 factor : variable
 		{
 			$$=$1;
+
+			//#semantic error check
+			SymbolInfo *temp=table.lookUp($1->getName());
+			if(!temp){
+				semanticErr++;
+				fprintf(error,"semantic error found in line %d: variable %s not declared in this scope\n\n",line,$1->getName().c_str());
+			}
+
+
 		} 
 	| ID LPAREN argument_list RPAREN
 		{
@@ -1150,9 +1192,9 @@ factor : variable
 			$$=$1;
 			assemblyCodes=$$->getCode();
 			
-			assemblyCodes+=("\tmov ax, "+$1->getName()+"\n");
-			assemblyCodes+=("\tadd ax, 1\n");
-			assemblyCodes+=("\tmov "+$1->getName()+", ax\n");
+			assemblyCodes+=("\tMOV AX, "+$1->getName()+"\n");
+			assemblyCodes+=("\tADD AX, 1\n");
+			assemblyCodes+=("\tMOV "+$1->getName()+", AX\n");
 			
 			$$->setCode(assemblyCodes);
 		} 
@@ -1168,9 +1210,9 @@ factor : variable
 			$$=$1;
 			assemblyCodes=$$->getCode();
 			
-			assemblyCodes+=("\tmov ax, "+$1->getName()+"\n");
-			assemblyCodes+=("\tsub ax, 1\n");
-			assemblyCodes+=("\tmov "+$1->getName()+", ax\n");
+			assemblyCodes+=("\tMOV AX, "+$1->getName()+"\n");
+			assemblyCodes+=("\tSUB AX, 1\n");
+			assemblyCodes+=("\tMOV "+$1->getName()+", AX\n");
 			
 			$$->setCode(assemblyCodes);
 ;		}

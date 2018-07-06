@@ -115,28 +115,11 @@ public:
 		next = x;
 	}
 
-	void allocateMemory(string choice, int n) {
-        if(choice=="int") {
-            ivalue=new int[n];
-            fill(ivalue,ivalue+n,0);
-        }
-
-        else if(choice=="float") {
-            fvalue=new float[n];
-            fill(fvalue,fvalue+n,0.0);
-        }
-
-        else if(choice=="char") {
-            cvalue=new char[n];
-            fill(cvalue,cvalue+n,'#');
-        }
-	}
-
 	void setCode(string code){
-        this.code=code;
+        this->code=code;
 	}
 
-	string getCode(string code){
+	string getCode(){
         return code;
 	}
 };
@@ -182,10 +165,7 @@ public:
 	bool Insert(string name, string type)
 	{
 		if (lookUp(name) != 0)
-		{
-			//fprintf(logout,"'%s' already Exists In The Current ScopeTable\n",name.c_str());
-			return  false;
-		}
+            return false;
 
 		SymbolInfo *newSymbol = new SymbolInfo(name, type);
 		int hash = Hash(name);
@@ -252,10 +232,10 @@ public:
 		return true;
 	}
 
-	void printScopeTable(FILE *logout)
+	void printScopeTable()
 	{
-		fprintf(logout, "	------------------------------\n");
-		fprintf(logout,"	ScopeTable #%d\n", id);
+		printf("	------------------------------\n");
+		printf("	ScopeTable #%d\n", id);
 		SymbolInfo *temp;
 
 		for (int i = 0; i < n; i++)
@@ -263,19 +243,19 @@ public:
 			if (!bucket[i])
 				continue;
 
-			fprintf(logout, "	%d  --> ", i);
+			printf("	%d  --> ", i);
 
 			temp = bucket[i];
 			while (temp)
 			{
-				fprintf(logout, "<%s, %s> ", temp->getName().c_str(), temp->getType().c_str());
+				printf("<%s, %s> ", temp->getName().c_str(), temp->getType().c_str());
 				temp = temp->getNext();
 			}
 
-			fprintf(logout, "\n");
+			printf("\n");
 		}
 
-		fprintf(logout, "	------------------------------\n");
+		printf("	------------------------------\n");
 	}
 
 	vector<SymbolInfo*> returnAllSymbols()
@@ -355,13 +335,10 @@ public:
 		v.push_back(newScopeTable);
 	}
 
-	void EnterScope(FILE *logout)
+	void EnterScope()
 	{
 		id++;
 		ScopeTable *newScopeTable = new ScopeTable(n, id);
-		fprintf(logout,"################################\n");
-		fprintf(logout,"# ScopeTable with ID %d Created #\n",id);
-		fprintf(logout,"################################\n\n");
 
 		if (!v.empty())
 			newScopeTable->setParentScopeTable(v.back());
@@ -370,7 +347,7 @@ public:
 		v.push_back(newScopeTable);
 	}
 
-	void ExitScope(FILE *logout)
+	void ExitScope()
 	{
 		if (!id)
 			return;
@@ -382,14 +359,14 @@ public:
 		delete dell;
 	}
 
-	bool Insert(string name, string type,FILE *logout)
+	bool Insert(string name, string type)
 	{
 		if (current)
 			return current->Insert(name, type);
 
 		else
 		{
-			EnterScope(logout);
+			EnterScope();
 			return current->Insert(name, type);
 		}
 	}
@@ -422,9 +399,8 @@ public:
         return id;
 	}
 
-	vector<SymbolInfo*> printCurrentAndGetAll(FILE *logout){
+	vector<SymbolInfo*> printCurrentAndGetAll(){
         vector<SymbolInfo*> v=current->returnAllSymbols();
-        current->printScopeTable(logout);
         return v;
 	}
 
@@ -432,20 +408,21 @@ public:
         return v[0];
 	}
 
-	void PrintCurrentScopeTable(FILE *logout) {
+	void PrintCurrentScopeTable() {
 		if (current)
-			current->printScopeTable(logout);
+			current->printScopeTable();
 	}
 
-	void PrintAllScopeTable(FILE *logout)
+	void PrintAllScopeTable()
 	{
 		ScopeTable *temp = current;
-		fprintf(logout,"------------------------------------------------------------\n");
+		printf("------------------------------------------------------------\n");
 		while (temp)
 		{
-			temp->printScopeTable(logout);
+			temp->printScopeTable();
 			temp = temp->getParentScopeTable();
 		}
-		fprintf(logout,"------------------------------------------------------------\n");
+
+		printf("------------------------------------------------------------\n");
 	}
 };

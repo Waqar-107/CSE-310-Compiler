@@ -4,5 +4,4 @@ y.tab.h
 y.tab.c
 *.o
 *.output
-*.sh
 *.out

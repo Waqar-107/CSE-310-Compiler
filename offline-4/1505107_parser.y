@@ -123,7 +123,7 @@ start : program {
 		 	if(!semanticErr && !cnt_err)
 		 	{
 		 		//init
-		 		string init=".MODEL SMALL\nSTACK 100H\n";
+		 		string init=".MODEL SMALL\n.STACK 100H\n";
 		 		
 		 		init+=".DATA\n";
 		 		
@@ -132,7 +132,7 @@ start : program {
 		 			if(variableListForInit[i].second=="0")
 		 				init+=("\t"+variableListForInit[i].first+" DW ?\n");
 		 			else
-		 				init+=("\t"+variableListForInit[i].first+" "+variableListForInit[i].second+" DUP(?)\n");
+		 				init+=("\t"+variableListForInit[i].first+" DW "+variableListForInit[i].second+" DUP(?)\n");
 		 		}
 
 		 		init+=".CODE\n";
@@ -158,14 +158,14 @@ start : program {
 		 		init+="\tPRINT_NUMBER:\n";
 		 		init+="\tXOR CX, CX\n";
 		 		init+="\tMOV BX, 10D\n\n";
-		 		init+="\tREPEAT:\n\n";
+		 		init+="\tREPEAT_CALC:\n\n";
 		 		init+="\t\t;AX:DX- QUOTIENT:REMAINDER\n";
 		 		init+="\t\tXOR DX, DX\n";
 		 		init+="\t\tDIV BX  ;DIVIDE BY 10\n";
 		 		init+="\t\tPUSH DX ;PUSH THE REMAINDER IN STACK\n\n";
 		 		init+="\t\tINC CX\n\n";
 		 		init+="\t\tOR AX, AX\n";
-		 		init+="\t\tJNE REPEAT\n\n";
+		 		init+="\t\tJNZ REPEAT_CALC\n\n";
 
 		 		init+="\tMOV AH, 2\n\n";
 		 		init+="\tPRINT_LOOP:\n";
@@ -173,6 +173,13 @@ start : program {
 		 		init+="\t\tADD DL, 30H\n";
 		 		init+="\t\tINT 21H\n";
 		 		init+="\t\tLOOP PRINT_LOOP\n";
+
+		 		init+="\n\t;NEWLINE\n";
+		 		init+="\tMOV AH, 2\n";
+		 		init+="\tMOV DL, 0AH\n";
+		 		init+="\tINT 21H\n";
+		 		init+="\tMOV DL, 0DH\n";
+		 		init+="\tINT 21H\n\n";
 
 		 		init+="\tPOP AX\n";
 		 		init+="\tPOP BX\n";
@@ -254,7 +261,10 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 		{
 			//-------------------------------------------------------------------------
 			//assembly code generation
-			assemblyCodes=$2->getName()+" PROC\n\n";
+			if($2->getName()=="main")
+				assemblyCodes="MAIN PROC\n\n";
+			else
+				assemblyCodes=$2->getName()+" PROC\n\n";
 
 			//if main function then initialize data segment
 			if($2->getName()=="main"){
@@ -267,13 +277,16 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 			assemblyCodes+=$7->getCode();
 
 			//ending of function
-			if($2->getName()=="main")
-				assemblyCodes+="\tMOV AX, 4CH\n\tINT 21H\n";
+			if($2->getName()=="main") {
+				assemblyCodes+="\n\tMOV AX, 4CH\n\tINT 21H";
+				assemblyCodes+=("\nMAIN ENDP\n\nEND MAIN");
+			}
 
-			else
+			else{
 				assemblyCodes+="RET\n";
-			
-			assemblyCodes+=$2->getName()+" ENDP\n\n";
+				assemblyCodes+=$2->getName()+" ENDP\n\n";
+			}
+				
 			//-------------------------------------------------------------------------
 			
 
@@ -389,7 +402,10 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 			
 			//-------------------------------------------------------------------------
 			//assembly code generation
-			assemblyCodes=$2->getName()+" PROC\n\n";
+			if($2->getName()=="main")
+				assemblyCodes="MAIN PROC\n\n";
+			else
+				assemblyCodes=$2->getName()+" PROC\n\n";
 
 			//if main function then initialize data segment
 			if($2->getName()=="main"){
@@ -402,13 +418,15 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 			assemblyCodes+=$6->getCode();
 
 			//ending of function
-			if($2->getName()=="main")
-				assemblyCodes+="\tMOV AX, 4CH\nINT 21H\n";
+			if($2->getName()=="main") {
+				assemblyCodes+="\n\tMOV AX, 4CH\n\tINT 21H";
+				assemblyCodes+=("\nMAIN ENDP\n\nEND MAIN");
+			}
 
-			else
+			else{
 				assemblyCodes+="RET\n";
-			
-			assemblyCodes+=$2->getName()+" ENDP\n\n";
+				assemblyCodes+=$2->getName()+" ENDP\n\n";
+			}
 			//-------------------------------------------------------------------------
 			
 
@@ -875,7 +893,7 @@ statement : var_declaration {
 	  	{
 	  		$$=new SymbolInfo("println","nonterminal");
 	  		
-			assemblyCodes=("\tMOV AX, "+$3->getName()+"\n");
+			assemblyCodes=("\n\tMOV AX, "+$3->getName()+stoi(table.getCurrentID())+"\n");
 			assemblyCodes+=("\tCALL PRINT_ID\n");
 
 			$$->setCode(assemblyCodes);

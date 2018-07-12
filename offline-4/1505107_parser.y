@@ -47,6 +47,11 @@ void yyerror(const char *s)
 string stoi(int n)
 {
 	string temp;
+
+	if(!n){
+		return "0";
+	}
+
 	while(n){
 		int r=n%10;
 		n/=10;
@@ -974,15 +979,7 @@ variable : ID
 		}	
 	   | variable ASSIGNOP logic_expression 	
 		{
-			SymbolInfo *newSymbol=new SymbolInfo("expression","logic_expression");
-			$$=newSymbol;
-
-			//-------------------------------------------------------------
-			//#code generation
-			assemblyCodes="\tMOV AX, "+$3->getName()+"\n";
-			assemblyCodes+=("\tMOV "+$1->getName()+", AX\n");
-			$$->setCode(assemblyCodes);
-			//-------------------------------------------------------------
+			$$=$1;
 
 			//---------------------------------------------------------------------------
 			//#semantic: Array Index: You have to check whether there is index used with array and vice versa.
@@ -1025,6 +1022,29 @@ variable : ID
 				returnType_curr="none";
 			}
 			//---------------------------------------------------------------------------
+		
+
+			//-------------------------------------------------------------
+			//#code generation
+			//cout<<$1->getName()<<" "<<$1->idx<<endl;
+			
+			assemblyCodes=$3->getCode()+$1->getCode();
+			assemblyCodes+=("\n\tMOV AX, "+$3->getName()+"\n");
+			string temp=$1->getName()+stoi(table.getCurrentID());
+
+			if($1->idx==-1){
+				assemblyCodes+=("\tMOV "+temp+", AX\n");
+			}
+
+			//array
+			else{
+				assemblyCodes+=("\tMOV "+temp+"+"+stoi($1->idx)+"*2, AX\n");
+			}
+
+			$$->setCode(assemblyCodes);
+			$$->setName(temp);
+			//-------------------------------------------------------------
+
 		}
 	   ;
 			
@@ -1034,8 +1054,7 @@ logic_expression : rel_expression
 		} 	
 		 | rel_expression LOGICOP rel_expression 	
 		{
-			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+$2->getName()+$3->getName(),"logic_expression");
-			$$=newSymbol;
+			$$=$1;
 
 			//------------------------------------------------------------------
 			//#semantic: LOGICOP MUST BE INT
@@ -1046,6 +1065,59 @@ logic_expression : rel_expression
 				semanticErr++;
 				fprintf(error,"semantic error in line %d found: both operands of %s should be integers\n\n",line,$2->getName().c_str());
 			}
+			//------------------------------------------------------------------
+
+
+			//------------------------------------------------------------------
+			//code generation
+			assemblyCodes=$$->getCode()+$3->getCode();
+			
+			string temp=newTemp();
+			string label1=newLabel();
+			string label2=newLabel();
+
+			assemblyCodes+=("\n\tMOV AX, "+$1->getName()+"\n");
+			assemblyCodes+=("\tMOV BX, "+$3->getName()+"\n");
+
+			if($2->getName()=="&&"){
+				assemblyCodes+=("\tCMP AX, 1\n");
+				assemblyCodes+=("\tJNE "+label1+"\n");
+				
+				assemblyCodes+=("\tCMP BX, 1\n");
+				assemblyCodes+=("\tJNE "+label1+"\n");
+
+				assemblyCodes+=("\tMOV AX, 1\n");
+				assemblyCodes+=("\tMOV "+temp+", AX\n");
+				assemblyCodes+=("\tJMP "+label2+"\n");
+				
+				assemblyCodes+=("\n\t"+label1+":\n");
+				assemblyCodes+=("\tMOV AX, 0\n");
+				assemblyCodes+=("\tMOV "+temp+", AX\n");
+				
+				
+				assemblyCodes+=("\n\t"+label2+":\n");
+			}
+
+			else if($2->getName()=="||"){
+				assemblyCodes+=("\tCMP AX, 1\n");
+				assemblyCodes+=("\tJE "+label1+"\n");
+				
+				assemblyCodes+=("\tCMP BX, 1\n");
+				assemblyCodes+=("\tJE "+label1+"\n");
+				
+				assemblyCodes+=("\tMOV AX, 0\n");
+				assemblyCodes+=("\tMOV "+temp+", AX\n");
+				assemblyCodes+=("\tJMP "+label2+"\n");
+				
+				assemblyCodes+=("\n\t"+label1+":\n");
+				assemblyCodes+=("\tMOV AX, 1\n");
+				assemblyCodes+=("\tMOV "+temp+", AX\n");
+				
+				assemblyCodes+=("\n\t"+label2+":\n");
+			}
+
+			$$->setCode(assemblyCodes);
+			$$->setName(temp);
 			//------------------------------------------------------------------
 		}
 		 ;

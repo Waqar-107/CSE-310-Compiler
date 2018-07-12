@@ -79,14 +79,71 @@ MAIN PROC
 	MOV AX, @DATA
 	MOV DS, AX
 
-	MOV AX, T3
-	MOV a, AX
-	MOV AX, T4
-	MOV b, AX
-	MOV AX, T8
-	MOV b, AX
+
 	MOV AX, 2
-	MOV c, AX
+	ADD AX, 3
+	MOV T1, AX
+
+	MOV AX, 1
+	MOV BX, T1
+	MUL BX
+	MOV T2, AX
+
+	MOV AX, T2
+	MOV BX, 3
+	XOR DX, DX
+	DIV BX
+	MOV T3 , DX
+
+	MOV AX, T3
+	MOV a2, AX
+
+	MOV AX, 1
+	CMP AX, 5
+	JL L1
+
+	MOV T4, 0
+	JMP L2
+
+L1:
+MOV T4, 1
+
+L2:
+
+	MOV AX, T4
+	MOV b2, AX
+
+	MOV AX, 2
+	ADD AX, 3
+	MOV T5, AX
+
+	MOV AX, 1
+	MOV BX, T5
+	MUL BX
+	MOV T6, AX
+
+	MOV AX, 5
+	MOV BX, 6
+	MUL BX
+	MOV T7, AX
+
+	MOV AX, T6
+	CMP AX, T7
+	JG L3
+
+	MOV T8, 0
+	JMP L4
+
+L3:
+MOV T8, 1
+
+L4:
+
+	MOV AX, T8
+	MOV b2, AX
+
+	MOV AX, 2
+	MOV c2+0*2, AX
 
 	MOV AX, a2
 	CALL PRINT_ID

@@ -4,6 +4,14 @@
 	a2 DW ?
 	b2 DW ?
 	c2 DW 3 DUP(?)
+	T1 DW ?
+	T2 DW ?
+	T3 DW ?
+	T4 DW ?
+	T5 DW ?
+	T6 DW ?
+	T7 DW ?
+	T8 DW ?
 .CODE
 PRINT_ID PROC
 
@@ -50,7 +58,7 @@ PRINT_ID PROC
 		INT 21H
 		LOOP PRINT_LOOP
 
-;NEWLINE
+	;NEWLINE
 	MOV AH, 2
 	MOV DL, 0AH
 	INT 21H
@@ -71,9 +79,11 @@ MAIN PROC
 	MOV AX, @DATA
 	MOV DS, AX
 
-	MOV AX, 1*2+3%3
+	MOV AX, T3
 	MOV a, AX
-	MOV AX, 1<5
+	MOV AX, T4
+	MOV b, AX
+	MOV AX, T8
 	MOV b, AX
 	MOV AX, 2
 	MOV c, AX

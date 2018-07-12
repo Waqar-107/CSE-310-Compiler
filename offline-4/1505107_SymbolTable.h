@@ -19,44 +19,46 @@ class SymbolInfo
 
 
 public:
-    int sz;
+    int sz, idx;
     vector<SymbolInfo*> edge;
-    int *ivalue;float *fvalue; char *cvalue;
 
 	SymbolInfo() {
+
         this->type="";
         this->code="";
         this->name="";
         this->return_type="";
         this->variable_type="";
 
-        ivalue=0; fvalue=0; cvalue=0; sz=0;
+        sz=0;
 
 		prev = 0;
 		next = 0;
 	}
 
 	SymbolInfo(string type) {
+
         this->type=type;
         this->name="";
         this->code="";
         this->return_type="";
         this->variable_type="";
 
-        ivalue=0; fvalue=0; cvalue=0; sz=0;
+        sz=0;
 
         prev = 0;
 		next = 0;
 	}
 
 	SymbolInfo(string name, string type) {
+
 		this->name = name;
 		this->type = type;
 		this->return_type="";
         this->code="";
         this->variable_type="";
 
-        ivalue=0; fvalue=0; cvalue=0; sz=0;
+        sz=0;
 
 		prev = 0;
 		next = 0;

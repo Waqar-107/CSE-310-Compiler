@@ -89,6 +89,8 @@ string newTemp()
 {
 	string temp="T"+stoi(tempCount);
 	tempCount++;
+
+	variableListForInit.push_back({temp,"0"});
 	return temp;
 }
 
@@ -919,6 +921,7 @@ variable : ID
 		{
 			$$=$1;
 			$$->setIdentity("var");
+			$$->idx=-1;
 
 			//--------------------------------------------------
 			//#semantic: see if variable has been declared
@@ -940,6 +943,7 @@ variable : ID
 			$$->setVariableType($3->getVariableType());
 			$$->setIdentity("arr");
 			$$->sz=atoi($3->getName().c_str());
+			$$->idx=stoi($3->getName());
 
 			//--------------------------------------------------------------------------
 			//#semantic: type checking, expression must be int, e.g: a[5.6]
@@ -1052,8 +1056,7 @@ rel_expression : simple_expression
 		}
 		| simple_expression RELOP simple_expression	
 		{
-			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+$2->getName()+$3->getName(),"rel_expression");
-			$$=newSymbol;
+			$$=$1;
 
 			//------------------------------------------------------------------
 			//#semantic: RELOP MUST BE INT
@@ -1065,6 +1068,58 @@ rel_expression : simple_expression
 				fprintf(error,"semantic error in line %d found: both operands of %s should be integers\n\n",line,$2->getName().c_str());
 			}
 			//------------------------------------------------------------------
+
+
+			//------------------------------------------------------------------
+			//code generation
+			//here two expressions are already in two variables, we compare them
+			//if true send them to label1, else assign false to the new temp and jump to label2
+			//from label1 assign true, eventually it will get down to label2
+
+			assemblyCodes=$$->getCode()+$3->getCode();
+			
+			assemblyCodes+=("\n\tMOV AX, "+$1->getName()+"\n");
+			assemblyCodes+=("\tCMP AX, "+$3->getName()+"\n");
+
+			string temp=newTemp();
+			string label1=newLabel();
+			string label2=newLabel();
+
+			if($2->getName()=="<"){
+				assemblyCodes+=("\tJL "+label1+"\n");
+			}
+			
+			else if($2->getName()=="<="){
+				assemblyCodes+=("\tJLE "+label1+"\n");
+			}
+
+			else if($2->getName()==">"){
+				assemblyCodes+=("\tJG "+label1+"\n");	
+			}
+				
+			else if($2->getName()==">="){
+				assemblyCodes+=("\tJGE "+label1+"\n");	
+			}
+				
+			else if($2->getName()=="=="){
+				assemblyCodes+=("\tJE "+label1+"\n");	
+			}
+				
+			else{
+				assemblyCodes+=("\tJNE "+label1+"\n");	
+			}
+				
+			assemblyCodes+=("\n\tMOV "+temp+", 0\n");
+			assemblyCodes+=("\tJMP "+label2+"\n");
+
+			assemblyCodes+=("\n"+label1+":\nMOV "+temp+", 1\n");
+			assemblyCodes+=("\n"+label2+":\n");
+				
+			$$->setName(temp);
+			$$->setCode(assemblyCodes);
+
+			delete $3;
+			//------------------------------------------------------------------
 		}
 		;
 				
@@ -1074,13 +1129,38 @@ simple_expression : term
 		} 
 		  | simple_expression ADDOP term
 		{
-			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+$2->getName()+$3->getName(),"simple_expression");
-			$$=newSymbol;
+			$$=$1;
 
 			if($1->getVariableType()=="float" || $3->getVariableType()=="float")
 				$$->setVariableType("float");
 			else
 				$$->setVariableType("int");
+
+			
+			assemblyCodes=$$->getCode();
+			assemblyCodes+=$3->getCode();
+
+			// move one of the operands to a register
+			//perform addition or subtraction with the other operand and 
+			//move the result in a temporary variable  
+			
+			string temp=newTemp();	
+			if($2->getName()=="+"){
+				assemblyCodes+=("\n\tMOV AX, "+$1->getName()+"\n");
+				assemblyCodes+=("\tADD AX, "+$3->getName()+"\n");
+				assemblyCodes+=("\tMOV "+temp+", AX\n");
+			}
+			
+			else{
+				assemblyCodes+=("\n\tMOV AX, "+$1->getName()+"\n");
+				assemblyCodes+=("\tSUB AX, "+$3->getName()+"\n");
+				assemblyCodes+=("\tMOV "+temp+", AX\n");
+			}
+		
+			$$->setCode(assemblyCodes);
+			$$->setName(temp);
+
+			delete $3;
 		} 
 		  ;
 					
@@ -1090,8 +1170,42 @@ term :	unary_expression
 		}
      |  term MULOP unary_expression
 		{
-			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+$2->getName()+$3->getName(),"term");
-			$$=newSymbol;
+			$$=$1;
+			assemblyCodes=$$->getCode();
+
+			//------------------------------------------------------------------------
+			//code generation	
+			assemblyCodes += $3->getCode();
+			assemblyCodes += "\n\tMOV AX, "+ $1->getName()+"\n";
+			assemblyCodes += "\tMOV BX, "+ $3->getName() +"\n";
+			
+			string temp=newTemp();
+
+			if($2->getName()=="*"){
+				assemblyCodes += "\tMUL BX\n";
+				assemblyCodes += "\tMOV "+temp+", AX\n";
+			}
+
+			else if($2->getName()=="/"){
+				// clear dx, perform 'div bx' and mov ax to temp
+				assemblyCodes += "\tXOR DX, DX\n";
+				assemblyCodes += "\tDIV BX\n";
+				assemblyCodes += "\tMOV "+temp+" , AX\n";
+			}
+
+			else{
+				// "%" operation clear dx, perform 'div bx' and mov dx to temp
+				assemblyCodes += "\tXOR DX, DX\n";
+				assemblyCodes += "\tDIV BX\n";
+				assemblyCodes += "\tMOV "+temp+" , DX\n";
+				
+			}
+
+			$$->setName(temp);
+			$$->setCode(assemblyCodes);
+
+			//------------------------------------------------------------------------
+
 
 			//------------------------------------------------------------------------
 			//#semantic: check 5%2.5
@@ -1116,13 +1230,41 @@ term :	unary_expression
 
 unary_expression : ADDOP unary_expression
 		{
-			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+$2->getName(),"unary_expression");
-			$$=newSymbol;
-			$$->setVariableType($2->getVariableType());
+			$$=$2;
+			string temp=newTemp();
+
+			//codes like "+const" or "+var" or "-const" or "-var"
+			//need actions only for negs
+			if($1->getName()=="-"){
+				assemblyCodes=$$->getCode();
+				assemblyCodes+=("\n\tMOV AX, "+$2->getName()+"\n");
+				assemblyCodes+=("\tNEG AX\n");
+				assemblyCodes+=("\tMOV "+temp+", AX\n");
+			}
+
+			else{
+				assemblyCodes=$$->getCode();
+				assemblyCodes+=("\n\tMOV AX, "+$2->getName()+"\n");
+				assemblyCodes+=("\tMOV "+temp+", AX\n");
+			}
+
+			$$->setCode(assemblyCodes);
+			$$->setName(temp);
 		}  
 		 | NOT unary_expression 
 		{
 			$$=$2;
+
+			//codes like !const or !var_name
+			string temp=newTemp();
+
+			assemblyCodes=$$->getCode();
+			assemblyCodes+=("\n\tMOV AX, "+$2->getName()+"\n");
+			assemblyCodes+=("\tNOT AX\n");
+			assemblyCodes+=("\tMOV "+temp+", AX\n");
+
+			$$->setCode(assemblyCodes);
+			$$->setName(temp);
 		}
 		 | factor 
 		{
@@ -1212,39 +1354,80 @@ factor : variable
 		}
 	| variable INCOP
 		{
+			//-----------------------------------------------------------------
 			//#semantic error check
 			SymbolInfo *temp=table.lookUp($1->getName());
 			if(!temp){
 				semanticErr++;
 				fprintf(error,"semantic error found in line %d: variable %s not declared in this scope\n\n",line,$1->getName().c_str());
 			}
+			//-----------------------------------------------------------------
 
-			$$=$1;
-			assemblyCodes=$$->getCode();
-			
-			assemblyCodes+=("\tMOV AX, "+$1->getName()+"\n");
-			assemblyCodes+=("\tADD AX, 1\n");
-			assemblyCodes+=("\tMOV "+$1->getName()+", AX\n");
-			
-			$$->setCode(assemblyCodes);
+
+			//-----------------------------------------------------------------
+			//code generation
+			else
+			{
+				$$=$1;
+				assemblyCodes=$$->getCode();
+
+				//array
+				if(temp->sz){
+					//idx+1 th element will be accessed using array_name+idx*2
+
+					assemblyCodes+=("\tMOV AX, "+$1->getName()+"+"+stoi($1->idx)+"*2\n");
+					assemblyCodes+=("\tINC AX\n");
+					assemblyCodes+=("\tMOV "+$1->getName()+"+"+stoi($1->idx)+"*2, AX\n");
+				}
+				
+				else{
+					assemblyCodes+=("\tMOV AX, "+$1->getName()+"\n");
+					assemblyCodes+=("\tINC AX\n");
+					assemblyCodes+=("\tMOV "+$1->getName()+", AX\n");
+				}
+				
+				$$->setCode(assemblyCodes);
+			}
+			//-----------------------------------------------------------------
 		} 
 	| variable DECOP
 		{
+			//-----------------------------------------------------------------
 			//#semantic error check
 			SymbolInfo *temp=table.lookUp($1->getName());
 			if(!temp){
 				semanticErr++;
 				fprintf(error,"semantic error found in line %d: variable %s not declared in this scope\n\n",line,$1->getName().c_str());
 			}
+			//-----------------------------------------------------------------
 
-			$$=$1;
-			assemblyCodes=$$->getCode();
+
+			//-----------------------------------------------------------------
+			//code generation
+			else
+			{
+				$$=$1;
+				assemblyCodes=$$->getCode();
+
+				//array
+				if(temp->sz){
+					//idx+1 th element will be accessed using array_name+idx*2
+
+					assemblyCodes+=("\tMOV AX, "+$1->getName()+"+"+stoi($1->idx)+"*2\n");
+					assemblyCodes+=("\tDEC AX\n");
+					assemblyCodes+=("\tMOV "+$1->getName()+"+"+stoi($1->idx)+"*2, AX\n");
+				}
+				
+				else{
+					assemblyCodes+=("\tMOV AX, "+$1->getName()+"\n");
+					assemblyCodes+=("\tDEC AX\n");
+					assemblyCodes+=("\tMOV "+$1->getName()+", AX\n");
+				}
+				
+				$$->setCode(assemblyCodes);
+			}
+			//-----------------------------------------------------------------
 			
-			assemblyCodes+=("\tMOV AX, "+$1->getName()+"\n");
-			assemblyCodes+=("\tSUB AX, 1\n");
-			assemblyCodes+=("\tMOV "+$1->getName()+", AX\n");
-			
-			$$->setCode(assemblyCodes);
 ;		}
 	;
 	

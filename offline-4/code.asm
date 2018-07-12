@@ -48,7 +48,7 @@ PRINT_ID PROC
 		POP DX
 		ADD DL, 30H
 		INT 21H
-		LOOP tPRINT_LOOP
+		LOOP PRINT_LOOP
 	POP AX
 	POP BX
 	POP CX
@@ -63,11 +63,24 @@ main PROC
 	MOV AX, @DATA
 	MOV DS, AX
 
+	MOV AX, 1*2+3%3
+	MOV a, AX
+	MOV AX, 1<5
+	MOV b, AX
+	MOV AX, 2
+	MOV c, AX
 	MOV AX, a&&b
 	CMP AX, 0
-	JE L
-	JMP L1	L:
+	JE L1
+	MOV AX, c
+	ADD AX, 1
+	MOV c, AX
+	JMP L2
 	L1:
+	MOV AX, c
+	MOV c, AX
+
+	L2:
 	MOV AX, a
 	CALL PRINT_ID
 	MOV AX, b

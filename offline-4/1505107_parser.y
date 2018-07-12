@@ -77,7 +77,7 @@ void fillScopeWithParams()
 }
 
 
-int labelCount=0, tempCount=0; 
+int labelCount=1, tempCount=1; 
 string newLabel()
 {
 	string temp="L"+stoi(labelCount);
@@ -172,7 +172,7 @@ start : program {
 		 		init+="\t\tPOP DX\n";
 		 		init+="\t\tADD DL, 30H\n";
 		 		init+="\t\tINT 21H\n";
-		 		init+="\t\tLOOP tPRINT_LOOP\n";
+		 		init+="\t\tLOOP PRINT_LOOP\n";
 
 		 		init+="\tPOP AX\n";
 		 		init+="\tPOP BX\n";
@@ -268,7 +268,7 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 
 			//ending of function
 			if($2->getName()=="main")
-				assemblyCodes+="\tMOV AX, 4CH\nINT 21H\n";
+				assemblyCodes+="\tMOV AX, 4CH\n\tINT 21H\n";
 
 			else
 				assemblyCodes+="RET\n";
@@ -835,11 +835,14 @@ statement : var_declaration {
 			string after_else=newLabel();
 
 			assemblyCodes=$$->getCode();
+			
 			assemblyCodes+=("\tMOV AX, "+$3->getName()+"\n");
 			assemblyCodes+="\tCMP AX, 0\n";
 			assemblyCodes+=("\tJE "+else_condition+"\n");		//false, jump to else
+			
 			assemblyCodes+=$5->getCode();					//true
 			assemblyCodes+=("\tJMP "+after_else);
+
 			assemblyCodes+=("\n\t"+else_condition+":\n");
 			assemblyCodes+=$7->getCode();
 			assemblyCodes+=("\n\t"+after_else+":\n");
@@ -849,11 +852,24 @@ statement : var_declaration {
 		}
 	  | WHILE LPAREN expression RPAREN statement
 		{
-			codes="while(";codes+=$3->getName();
-			codes+=")";codes+=$5->getName();
+			$$=new SymbolInfo("while","loop");
 
-			SymbolInfo *newSymbol=new SymbolInfo(codes,"statement");
-			$$=newSymbol;
+			string label1=newLabel(), label2=newLabel();
+			
+			assemblyCodes=(label1+":\n");	//REPEAT
+			
+			assemblyCodes+=$3->getCode();	//check if we can continue executing
+
+			assemblyCodes+=("\tMOV AX, "+$3->getName()+"\n");
+			assemblyCodes+="\tCMP AX, 0\n";
+			assemblyCodes+="\tJE label2\n";
+
+			assemblyCodes+=$5->getCode();	//execute the statements inside while
+			assemblyCodes+="\tJMP label1\n";
+			
+			assemblyCodes+=("\t"+label2+":\n");
+
+			$$->setCode(assemblyCodes);
 		}
 	  | PRINTLN LPAREN ID RPAREN SEMICOLON
 	  	{
@@ -873,16 +889,11 @@ statement : var_declaration {
 		}
 	  ;
 	  
-expression_statement : SEMICOLON
-		{
-			SymbolInfo *newSymbol=new SymbolInfo(";","expression_statement");
-			$$=newSymbol;
+expression_statement : SEMICOLON {
+			$$=new SymbolInfo("SEMICOLON","SEMICOLON");
 		}			
-			| expression SEMICOLON
-		{
-			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+";","expression_statement");
-			$$=newSymbol;
-			$$->setVariableType($1->getVariableType());
+			| expression SEMICOLON {
+			$$=$1;
 		} 
 			;
 	  
@@ -941,14 +952,15 @@ variable : ID
 		}	
 	   | variable ASSIGNOP logic_expression 	
 		{
-			codes=$1->getName();
-			if($1->sz)
-				codes+="["+stoi($1->sz)+"]";
-
-			SymbolInfo *newSymbol=new SymbolInfo(codes+"="+$3->getName(),"expression");
+			SymbolInfo *newSymbol=new SymbolInfo("expression","logic_expression");
 			$$=newSymbol;
 
-			codes="";
+			//-------------------------------------------------------------
+			//#code generation
+			assemblyCodes="\tMOV AX, "+$3->getName()+"\n";
+			assemblyCodes+=("\tMOV "+$1->getName()+", AX\n");
+			$$->setCode(assemblyCodes);
+			//-------------------------------------------------------------
 
 			//---------------------------------------------------------------------------
 			//#semantic: Array Index: You have to check whether there is index used with array and vice versa.

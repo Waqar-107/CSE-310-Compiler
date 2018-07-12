@@ -25,6 +25,7 @@ public:
 
 	SymbolInfo() {
         this->type="";
+        this->code="";
         this->name="";
         this->return_type="";
         this->variable_type="";
@@ -38,6 +39,7 @@ public:
 	SymbolInfo(string type) {
         this->type=type;
         this->name="";
+        this->code="";
         this->return_type="";
         this->variable_type="";
 
@@ -51,6 +53,7 @@ public:
 		this->name = name;
 		this->type = type;
 		this->return_type="";
+        this->code="";
         this->variable_type="";
 
         ivalue=0; fvalue=0; cvalue=0; sz=0;

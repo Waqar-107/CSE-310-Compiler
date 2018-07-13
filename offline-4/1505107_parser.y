@@ -826,11 +826,11 @@ statement : var_declaration {
 			
 			assemblyCodes+=("\tMOV AX, "+$4->getName()+"\n");
 			assemblyCodes+="\tCMP AX, 0\n";
-			assemblyCodes+="\tJE label2\n";
+			assemblyCodes+="\tJE "+label2+"\n";
 
 			assemblyCodes+=$7->getCode();
 			assemblyCodes+=$5->getCode();
-			assemblyCodes+="\tJMP label1\n";
+			assemblyCodes+="\tJMP "+label1+"\n";
 			
 			assemblyCodes+=("\t"+label2+":\n");
 
@@ -844,6 +844,7 @@ statement : var_declaration {
 			
 			assemblyCodes=$$->getCode();
 			assemblyCodes+=("\tMOV AX, "+$3->getName()+"\n");
+
 			assemblyCodes+="\tCMP AX, 0\n";
 			assemblyCodes+=("\tJE "+label+"\n");
 			assemblyCodes+=$5->getCode();
@@ -883,14 +884,15 @@ statement : var_declaration {
 			
 			assemblyCodes=(label1+":\n");	//REPEAT
 			
-			assemblyCodes+=$3->getCode();	//check if we can continue executing
+			//check if we can continue executing
+			assemblyCodes+=$3->getCode();
 
 			assemblyCodes+=("\tMOV AX, "+$3->getName()+"\n");
 			assemblyCodes+="\tCMP AX, 0\n";
-			assemblyCodes+="\tJE label2\n";
+			assemblyCodes+="\tJE "+label2+"\n";
 
 			assemblyCodes+=$5->getCode();	//execute the statements inside while
-			assemblyCodes+="\tJMP label1\n";
+			assemblyCodes+="\tJMP "+label1+"\n";
 			
 			assemblyCodes+=("\t"+label2+":\n");
 
@@ -925,6 +927,7 @@ expression_statement : SEMICOLON {
 variable : ID
 		{
 			$$=$1;
+
 			$$->setIdentity("var");
 			$$->idx=-1;
 
@@ -945,9 +948,11 @@ variable : ID
 		{
 			SymbolInfo *newSymbol=new SymbolInfo($1->getName(),"variable");
 			$$=newSymbol;
+
 			$$->setVariableType($3->getVariableType());
 			$$->setIdentity("arr");
 			$$->sz=atoi($3->getName().c_str());
+			
 			$$->idx=stoi($3->getName());
 
 			//--------------------------------------------------------------------------
@@ -1184,8 +1189,8 @@ rel_expression : simple_expression
 			assemblyCodes+=("\n\tMOV "+temp+", 0\n");
 			assemblyCodes+=("\tJMP "+label2+"\n");
 
-			assemblyCodes+=("\n"+label1+":\nMOV "+temp+", 1\n");
-			assemblyCodes+=("\n"+label2+":\n");
+			assemblyCodes+=("\n\t"+label1+":\n\tMOV "+temp+", 1\n");
+			assemblyCodes+=("\n\t"+label2+":\n");
 				
 			$$->setName(temp);
 			$$->setCode(assemblyCodes);
@@ -1346,7 +1351,19 @@ unary_expression : ADDOP unary_expression
 	
 factor : variable
 		{
-			$$=$1;
+			$$=new SymbolInfo($1->getName(),$1->getType());
+			
+			//copy all properties
+			$$->sz=$1->sz;
+			$$->setVariableType($1->getVariableType());
+			$$->setReturnType($1->getReturnType());
+			$$->setCode($$->getCode());
+			$$->setIdentity($1->getIdentity()) ;
+
+			//-------------------------------------------------------------------
+			//for code generation purpose we concatenate the current id with the variable name
+			$$->setName($$->getName()+stoi(table.getCurrentID())); 
+			//-------------------------------------------------------------------
 
 			//#semantic error check
 			SymbolInfo *temp=table.lookUp($1->getName());
@@ -1354,8 +1371,6 @@ factor : variable
 				semanticErr++;
 				fprintf(error,"semantic error found in line %d: variable %s not declared in this scope\n\n",line,$1->getName().c_str());
 			}
-
-
 		} 
 	| ID LPAREN argument_list RPAREN
 		{
@@ -1440,22 +1455,33 @@ factor : variable
 			//code generation
 			else
 			{
-				$$=$1;
+				$$=new SymbolInfo($1->getName(),$1->getType());
+			
+				//copy all properties
+				$$->sz=$1->sz;
+				$$->setVariableType($1->getVariableType());
+				$$->setReturnType($1->getReturnType());
+				$$->setCode($$->getCode());
+				$$->setIdentity($1->getIdentity()) ;
+
 				assemblyCodes=$$->getCode();
+				string var_name=$1->getName()+stoi(table.getCurrentID());
+
+				$$->setName(var_name);
 
 				//array
 				if(temp->sz){
 					//idx+1 th element will be accessed using array_name+idx*2
 
-					assemblyCodes+=("\tMOV AX, "+$1->getName()+"+"+stoi($1->idx)+"*2\n");
+					assemblyCodes+=("\tMOV AX, "+var_name+"+"+stoi($1->idx)+"*2\n");
 					assemblyCodes+=("\tINC AX\n");
-					assemblyCodes+=("\tMOV "+$1->getName()+"+"+stoi($1->idx)+"*2, AX\n");
+					assemblyCodes+=("\tMOV "+var_name+"+"+stoi($1->idx)+"*2, AX\n");
 				}
 				
 				else{
-					assemblyCodes+=("\tMOV AX, "+$1->getName()+"\n");
+					assemblyCodes+=("\tMOV AX, "+var_name+"\n");
 					assemblyCodes+=("\tINC AX\n");
-					assemblyCodes+=("\tMOV "+$1->getName()+", AX\n");
+					assemblyCodes+=("\tMOV "+var_name+", AX\n");
 				}
 				
 				$$->setCode(assemblyCodes);
@@ -1478,22 +1504,33 @@ factor : variable
 			//code generation
 			else
 			{
-				$$=$1;
+				$$=new SymbolInfo($1->getName(),$1->getType());
+			
+				//copy all properties
+				$$->sz=$1->sz;
+				$$->setVariableType($1->getVariableType());
+				$$->setReturnType($1->getReturnType());
+				$$->setCode($$->getCode());
+				$$->setIdentity($1->getIdentity()) ;
+
 				assemblyCodes=$$->getCode();
+				string var_name=$1->getName()+stoi(table.getCurrentID());
+
+				$$->setName(var_name);
 
 				//array
 				if(temp->sz){
 					//idx+1 th element will be accessed using array_name+idx*2
 
-					assemblyCodes+=("\tMOV AX, "+$1->getName()+"+"+stoi($1->idx)+"*2\n");
+					assemblyCodes+=("\tMOV AX, "+var_name+"+"+stoi($1->idx)+"*2\n");
 					assemblyCodes+=("\tDEC AX\n");
-					assemblyCodes+=("\tMOV "+$1->getName()+"+"+stoi($1->idx)+"*2, AX\n");
+					assemblyCodes+=("\tMOV "+var_name+"+"+stoi($1->idx)+"*2, AX\n");
 				}
 				
 				else{
-					assemblyCodes+=("\tMOV AX, "+$1->getName()+"\n");
+					assemblyCodes+=("\tMOV AX, "+var_name+"\n");
 					assemblyCodes+=("\tDEC AX\n");
-					assemblyCodes+=("\tMOV "+$1->getName()+", AX\n");
+					assemblyCodes+=("\tMOV "+var_name+", AX\n");
 				}
 				
 				$$->setCode(assemblyCodes);

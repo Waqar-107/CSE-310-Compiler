@@ -1,11 +1,13 @@
 int main(){
-    int a,b,c[3];
-   
-    a=1*(2+3)%3;
-    b= 1<5;
-    b=1*(2+3)>5*6;
-    c[0]=2;
-
+    int a,b,i;
+    b=0;
+    for(i=0;i<4;i++){
+        a=3;
+        while(a--){
+            b++;
+        }
+    }
     println(a);
     println(b);
+    println(i);
 }

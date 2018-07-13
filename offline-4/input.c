@@ -10,4 +10,7 @@ int main(){
     println(a);
     println(b);
     println(i);
+
+    a=5;a--;a--;
+println(a);
 }

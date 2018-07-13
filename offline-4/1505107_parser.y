@@ -99,6 +99,66 @@ string newTemp()
 	return temp;
 }
 
+void optimizeCode()
+{
+    string str;
+    map<string,string> reg_and_var;
+
+    while(getline(cin,str))
+    {
+        //check for MOV x, y
+        int i,j,k;
+
+        if(str.find("MOV")!=string::npos)
+        {
+            //first find end of mov
+            k=0;j=-1;
+            while(k<str.length())
+            {
+                if(str[k]=='M' && str[k+1]=='O' && str[k+2]=='V'){
+                    j=k+3;
+                    break;
+                }
+
+                k++;
+            }
+
+            //now from j till end split the string
+            string x,y;
+
+            k=1;
+            for(i=j;i<str.length();i++)
+            {
+                if(str[i]==',')
+                    k=2;
+
+                else if(str[i]!=' '){
+                    if(k==1)
+                        x.push_back(str[i]);
+                    else
+                        y.push_back(str[i]);
+                }
+            }
+
+            //MOV x,y
+            //now we optimize
+            if(x=="AH" && (y=="1" || y=="2"))
+                fprintf(optimized_asmCode,"%s\n",str.c_str());
+
+            else{
+                 if(reg_and_var[x]!=y && x!=reg_and_var[y])
+                {
+                    reg_and_var[x]=y;
+                    fprintf(optimized_asmCode,"%s\n",str.c_str());
+                }
+            }
+        }
+
+        else
+            fprintf(optimized_asmCode,"%s\n",str.c_str());
+    }
+}
+
 %}
 
 %union{
@@ -197,6 +257,8 @@ start : program {
 
 		 		fprintf(asmCode,"%s",init.c_str());
 		 		fprintf(asmCode,"%s",$$->getCode().c_str());
+
+		 		optimizeCode();
 		 	}
 		}
 	;
@@ -1515,6 +1577,7 @@ factor : variable
 
 				assemblyCodes=$$->getCode();
 				string var_name=$1->getName()+stoi(table.getCurrentID());
+				string temp_str=newTemp();
 
 				$$->setName(var_name);
 
@@ -1523,17 +1586,20 @@ factor : variable
 					//idx+1 th element will be accessed using array_name+idx*2
 
 					assemblyCodes+=("\tMOV AX, "+var_name+"+"+stoi($1->idx)+"*2\n");
+					assemblyCodes+=("\tMOV "+temp_str+", AX\n");
 					assemblyCodes+=("\tDEC AX\n");
 					assemblyCodes+=("\tMOV "+var_name+"+"+stoi($1->idx)+"*2, AX\n");
 				}
 				
 				else{
 					assemblyCodes+=("\tMOV AX, "+var_name+"\n");
+					assemblyCodes+=("\tMOV "+temp_str+", AX\n");
 					assemblyCodes+=("\tDEC AX\n");
 					assemblyCodes+=("\tMOV "+var_name+", AX\n");
 				}
 				
 				$$->setCode(assemblyCodes);
+				$$->setName(temp_str);
 			}
 			//-----------------------------------------------------------------
 			

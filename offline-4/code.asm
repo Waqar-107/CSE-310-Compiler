@@ -4,6 +4,10 @@
 	a2 DW ?
 	b2 DW ?
 	i2 DW ?
+	T1 DW ?
+	T2 DW ?
+	T3 DW ?
+	T4 DW ?
 .CODE
 PRINT_ID PROC
 
@@ -72,28 +76,70 @@ MAIN PROC
 	MOV DS, AX
 
 
-	MOV AX, 3
+	MOV AX, 0
 	MOV b2, AX
 
 	MOV AX, 0
-	MOV a2, AX
-L1:
-	MOV AX, b2
-	CMP AX, 0
-	JE L2
-	MOV AX, b2
-	DEC AX
-	MOV b2, AX
-	MOV AX, a2
-	INC AX
-	MOV a2, AX
-	JMP L1
+	MOV i2, AX
+L5:
+
+	MOV AX, i2
+	CMP AX, 4
+	JL L1
+
+	MOV T1, 0
+	JMP L2
+
+	L1:
+	MOV T1, 1
+
 	L2:
+	MOV AX, T1
+	CMP AX, 0
+	JE L6
+
+	MOV AX, 3
+	MOV a2, AX
+L3:
+	MOV AX, a2
+	MOV T2, AX
+	DEC AX
+	MOV a2, AX
+	MOV AX, T2
+	CMP AX, 0
+	JE L4
+	MOV AX, b2
+	INC AX
+	MOV b2, AX
+	JMP L3
+	L4:
+	MOV AX, i2
+	INC AX
+	MOV i2, AX
+	JMP L5
+	L6:
 
 	MOV AX, a2
 	CALL PRINT_ID
 
 	MOV AX, b2
+	CALL PRINT_ID
+
+	MOV AX, i2
+	CALL PRINT_ID
+
+	MOV AX, 5
+	MOV a2, AX
+	MOV AX, a2
+	MOV T3, AX
+	DEC AX
+	MOV a2, AX
+	MOV AX, a2
+	MOV T4, AX
+	DEC AX
+	MOV a2, AX
+
+	MOV AX, a2
 	CALL PRINT_ID
 
 	MOV AX, 4CH

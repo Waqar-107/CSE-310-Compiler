@@ -19,9 +19,10 @@ class SymbolInfo
 
 
 public:
-    int sz, idx;
+    int sz, idx, id;
     string asmName;
     vector<SymbolInfo*> edge;
+    vector<SymbolInfo*> params;
 
 	SymbolInfo() {
 

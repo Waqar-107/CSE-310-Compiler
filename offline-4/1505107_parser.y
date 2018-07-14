@@ -76,10 +76,10 @@ void fillScopeWithParams()
 			SymbolInfo *temp=table.lookUp(params[i]->getName());
 			temp->setVariableType(params[i]->getVariableType());
 			temp->sz=params[i]->sz;
+
+			variableListForInit.push_back({params[i]->getName()+stoi(table.getCurrentID()),"0"});
 		}
 	}
-
-	params.clear();
 }
 
 
@@ -258,6 +258,8 @@ start : program {
 
 		 		fprintf(asmCode,"%s",init.c_str());
 		 		fprintf(asmCode,"%s",$$->getCode().c_str());
+
+		 		optimizeCode();
 		 	}
 		}
 	;
@@ -341,6 +343,13 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 				assemblyCodes+="\tMOV DS, AX\n\n";
 			}
 
+			else{
+				assemblyCodes+="\tPUSH AX\n";
+				assemblyCodes+="\tPUSH BX\n";
+				assemblyCodes+="\tPUSH CX\n";
+				assemblyCodes+="\tPUSH DX\n";
+			}
+
 			//function body
 			assemblyCodes+=$7->getCode();
 
@@ -351,6 +360,11 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 			}
 
 			else{
+				assemblyCodes+="\tPOP AX\n";
+				assemblyCodes+="\tPOP BX\n";
+				assemblyCodes+="\tPOP CX\n";
+				assemblyCodes+="\tPOP DX\n";
+
 				assemblyCodes+="RET\n";
 				assemblyCodes+=$2->getName()+" ENDP\n\n";
 			}
@@ -365,7 +379,9 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 			//------------------------------------------
 			//current scope obtained, insert the function in the global scope
 			int id=table.getCurrentID();
-			var_list=table.printCurrentAndGetAll();
+			for(int i=0;i<params.size();i++)
+				var_list.push_back(params[i]);
+
 			table.ExitScope();
 			//------------------------------------------
 
@@ -432,6 +448,10 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 								}
 
 								x->setReturnType($1->getType());
+								for(int i=0;i<params.size();i++)
+									x->params.push_back(params[i]);
+
+								x->id=id;
 								currentFunction=x;cout<<var_list.size()<<" "<<$2->getName()<<endl;
 							}
 
@@ -461,9 +481,13 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 				}
 
 				currentFunction=x;cout<<var_list.size()<<" "<<$2->getName()<<endl;
+				for(int i=0;i<params.size();i++)
+					x->params.push_back(params[i]);
+				x->id=id;
 			}
 
 			var_list.clear();
+			params.clear();
 		}
 		| type_specifier ID LPAREN RPAREN{table.EnterScope();} compound_statement
 		{
@@ -482,6 +506,13 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 				assemblyCodes+="\tMOV DS, AX\n\n";
 			}
 
+			else{
+				assemblyCodes+="\tPUSH AX\n";
+				assemblyCodes+="\tPUSH BX\n";
+				assemblyCodes+="\tPUSH CX\n";
+				assemblyCodes+="\tPUSH DX\n";
+			}
+
 			//function body
 			assemblyCodes+=$6->getCode();
 
@@ -492,6 +523,11 @@ func_definition : type_specifier ID LPAREN parameter_list RPAREN{table.EnterScop
 			}
 
 			else{
+				assemblyCodes+="\tPOP AX\n";
+				assemblyCodes+="\tPOP BX\n";
+				assemblyCodes+="\tPOP CX\n";
+				assemblyCodes+="\tPOP DX\n";
+
 				assemblyCodes+="RET\n";
 				assemblyCodes+=$2->getName()+" ENDP\n\n";
 			}
@@ -953,10 +989,14 @@ statement : var_declaration {
 		}
 	  | RETURN expression SEMICOLON
 	    {
-			$$=new SymbolInfo(codes,"statement");
+			$$=new SymbolInfo("return","statement");
 
 			isReturning=true;
 			isReturningType=$2->getVariableType();
+
+			assemblyCodes=$$->getCode();
+
+			$$->setCode(assemblyCodes);
 		}
 	  ;
 	  
@@ -1421,7 +1461,7 @@ factor : variable
 		} 
 	| ID LPAREN argument_list RPAREN
 		{
-			SymbolInfo *newSymbol=new SymbolInfo($1->getName()+"("+$3->getName()+")","factor");
+			SymbolInfo *newSymbol=new SymbolInfo("func_call","factor");
 			$$=newSymbol;
 
 			//--------------------------------------------------------------------------
@@ -1434,15 +1474,17 @@ factor : variable
 			else
 				$$->setVariableType("func_not_found");
 
-			if(func && func->getIdentity()=="func_defined"){
-				if(func->edge.size()!=arg_list.size()){
+			if(func && func->getIdentity()=="func_defined")
+			{
+				if(func->params.size()!=arg_list.size()){
 					semanticErr++;
 					fprintf(error,"semantic error found in line %d: argument list didn't match, wrong number of arguments\n\n",line);
 				}
 
 				else
 				{
-					for(int i=0;i<func->edge.size();i++)
+					assemblyCodes=$$->getCode();
+					for(int i=0;i<func->params.size();i++)
 					{
 						SymbolInfo *x=table.lookUp(arg_list[i]->getName());
 						if(x)
@@ -1452,15 +1494,20 @@ factor : variable
 								fprintf(error,"semantic error found in line %d: type mismatch, wrong type of argument given\n\n",line);
 								break;
 							}
+							else{
+								assemblyCodes+="\n\tMOV AX, "+arg_list[i]->getName()+stoi(table.getCurrentID())+"\n";
+								assemblyCodes+="\tMOV "+func->params[i]->getName()+stoi(func->id)+", AX\n";
+							}
 						}
 
-						//parameter can be CONST_INT or CONST_FLOAT 
-						else if(arg_list[i]->getIdentity()=="var"){
+						else{
 							semanticErr++;
-							fprintf(error,"semantic error found in line %d: variable '%s' not found\n\n",line,arg_list[i]->getName().c_str());
-							break;
+							fprintf(error,"semantic error found in line %d: function not found\n\n",line);
 						}
 					}
+
+					assemblyCodes+="\tCALL "+func->getName()+"\n";
+					$$->setCode(assemblyCodes);
 				}
 			}
 

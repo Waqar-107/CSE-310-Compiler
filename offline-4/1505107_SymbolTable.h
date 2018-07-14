@@ -20,6 +20,7 @@ class SymbolInfo
 
 public:
     int sz, idx;
+    string asmName;
     vector<SymbolInfo*> edge;
 
 	SymbolInfo() {
@@ -402,6 +403,10 @@ public:
 
 	int getCurrentID() {
         return id;
+	}
+
+	bool searchInCurrent(string name){
+        return current->lookUp(name);
 	}
 
 	vector<SymbolInfo*> printCurrentAndGetAll(){

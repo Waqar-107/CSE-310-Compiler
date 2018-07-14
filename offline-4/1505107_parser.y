@@ -7,6 +7,7 @@
 #include<string>
 #include<vector>
 #include<algorithm>
+#include<map>
 #include "1505107_SymbolTable.h"
 
 using namespace std;
@@ -257,8 +258,6 @@ start : program {
 
 		 		fprintf(asmCode,"%s",init.c_str());
 		 		fprintf(asmCode,"%s",$$->getCode().c_str());
-
-		 		optimizeCode();
 		 	}
 		}
 	;
@@ -650,25 +649,8 @@ compound_statement : LCURL statements RCURL
  		    
 var_declaration : type_specifier declaration_list SEMICOLON
 		{
-			codes="";
-			codes += ($1->getType()+" ");
-
-			//print the declaration_list
-			for(int i=0;i<$2->edge.size();i++){
-				codes += $2->edge[i]->getName();
-				
-				if($2->edge[i]->sz>0)
-					codes+="["+stoi($2->edge[i]->sz)+"]";
-				
-				if(i<$2->edge.size()-1)
-					codes+=",";
-			}
-
-			codes+="SEMICOLON";
-
-			SymbolInfo *newSymbol=new SymbolInfo(codes,"var_declaration");
-			$$=newSymbol;
-
+			
+			$$=new SymbolInfo("var_declaration","var_declaration");
 			$2->edge.clear();
 		}
  		 ;
@@ -993,6 +975,8 @@ variable : ID
 			$$->setIdentity("var");
 			$$->idx=-1;
 
+			$$->asmName=$$->getName()+stoi(table.getCurrentID());
+
 			//--------------------------------------------------
 			//#semantic: see if variable has been declared
 			SymbolInfo *x=table.lookUp($1->getName());
@@ -1016,6 +1000,7 @@ variable : ID
 			$$->sz=atoi($3->getName().c_str());
 			
 			$$->idx=stoi($3->getName());
+			$$->asmName=$$->getName()+stoi(table.getCurrentID());
 
 			//--------------------------------------------------------------------------
 			//#semantic: type checking, expression must be int, e.g: a[5.6]
@@ -1096,9 +1081,9 @@ variable : ID
 			//cout<<$1->getName()<<" "<<$1->idx<<endl;
 			
 			assemblyCodes=$3->getCode()+$1->getCode();
-			assemblyCodes+=("\n\tMOV AX, "+$3->getName()+"\n");
+			assemblyCodes+=("\n\tMOV AX, "+$3->asmName+"\n");
+			
 			string temp=$1->getName()+stoi(table.getCurrentID());
-
 			if($1->idx==-1){
 				assemblyCodes+=("\tMOV "+temp+", AX\n");
 			}
@@ -1110,6 +1095,7 @@ variable : ID
 
 			$$->setCode(assemblyCodes);
 			$$->setName(temp);
+			$$->asmName=temp;
 			//-------------------------------------------------------------
 
 		}
@@ -1143,8 +1129,8 @@ logic_expression : rel_expression
 			string label1=newLabel();
 			string label2=newLabel();
 
-			assemblyCodes+=("\n\tMOV AX, "+$1->getName()+"\n");
-			assemblyCodes+=("\tMOV BX, "+$3->getName()+"\n");
+			assemblyCodes+=("\n\tMOV AX, "+$1->asmName+"\n");
+			assemblyCodes+=("\tMOV BX, "+$3->asmName+"\n");
 
 			if($2->getName()=="&&"){
 				assemblyCodes+=("\tCMP AX, 1\n");
@@ -1185,6 +1171,7 @@ logic_expression : rel_expression
 
 			$$->setCode(assemblyCodes);
 			$$->setName(temp);
+			$$->asmName=temp;
 			//------------------------------------------------------------------
 		}
 		 ;
@@ -1217,8 +1204,8 @@ rel_expression : simple_expression
 
 			assemblyCodes=$$->getCode()+$3->getCode();
 			
-			assemblyCodes+=("\n\tMOV AX, "+$1->getName()+"\n");
-			assemblyCodes+=("\tCMP AX, "+$3->getName()+"\n");
+			assemblyCodes+=("\n\tMOV AX, "+$1->asmName+"\n");
+			assemblyCodes+=("\tCMP AX, "+$3->asmName+"\n");
 
 			string temp=newTemp();
 			string label1=newLabel();
@@ -1255,6 +1242,7 @@ rel_expression : simple_expression
 			assemblyCodes+=("\n\t"+label2+":\n");
 				
 			$$->setName(temp);
+			$$->asmName=temp;
 			$$->setCode(assemblyCodes);
 
 			delete $3;
@@ -1285,19 +1273,20 @@ simple_expression : term
 			
 			string temp=newTemp();	
 			if($2->getName()=="+"){
-				assemblyCodes+=("\n\tMOV AX, "+$1->getName()+"\n");
-				assemblyCodes+=("\tADD AX, "+$3->getName()+"\n");
+				assemblyCodes+=("\n\tMOV AX, "+$1->asmName+"\n");
+				assemblyCodes+=("\tADD AX, "+$3->asmName+"\n");
 				assemblyCodes+=("\tMOV "+temp+", AX\n");
 			}
 			
 			else{
-				assemblyCodes+=("\n\tMOV AX, "+$1->getName()+"\n");
-				assemblyCodes+=("\tSUB AX, "+$3->getName()+"\n");
+				assemblyCodes+=("\n\tMOV AX, "+$1->asmName+"\n");
+				assemblyCodes+=("\tSUB AX, "+$3->asmName+"\n");
 				assemblyCodes+=("\tMOV "+temp+", AX\n");
 			}
 		
 			$$->setCode(assemblyCodes);
 			$$->setName(temp);
+			$$->asmName=temp;
 
 			delete $3;
 		} 
@@ -1315,8 +1304,8 @@ term :	unary_expression
 			//------------------------------------------------------------------------
 			//code generation	
 			assemblyCodes += $3->getCode();
-			assemblyCodes += "\n\tMOV AX, "+ $1->getName()+"\n";
-			assemblyCodes += "\tMOV BX, "+ $3->getName() +"\n";
+			assemblyCodes += "\n\tMOV AX, "+ $1->asmName+"\n";
+			assemblyCodes += "\tMOV BX, "+ $3->asmName+"\n";
 			
 			string temp=newTemp();
 
@@ -1341,6 +1330,7 @@ term :	unary_expression
 			}
 
 			$$->setName(temp);
+			$$->asmName=temp;
 			$$->setCode(assemblyCodes);
 
 			//------------------------------------------------------------------------
@@ -1376,19 +1366,20 @@ unary_expression : ADDOP unary_expression
 			//need actions only for negs
 			if($1->getName()=="-"){
 				assemblyCodes=$$->getCode();
-				assemblyCodes+=("\n\tMOV AX, "+$2->getName()+"\n");
+				assemblyCodes+=("\n\tMOV AX, "+$2->asmName+"\n");
 				assemblyCodes+=("\tNEG AX\n");
 				assemblyCodes+=("\tMOV "+temp+", AX\n");
 			}
 
 			else{
 				assemblyCodes=$$->getCode();
-				assemblyCodes+=("\n\tMOV AX, "+$2->getName()+"\n");
+				assemblyCodes+=("\n\tMOV AX, "+$2->asmName+"\n");
 				assemblyCodes+=("\tMOV "+temp+", AX\n");
 			}
 
 			$$->setCode(assemblyCodes);
 			$$->setName(temp);
+			$$->asmName=temp;
 		}  
 		 | NOT unary_expression 
 		{
@@ -1398,12 +1389,13 @@ unary_expression : ADDOP unary_expression
 			string temp=newTemp();
 
 			assemblyCodes=$$->getCode();
-			assemblyCodes+=("\n\tMOV AX, "+$2->getName()+"\n");
+			assemblyCodes+=("\n\tMOV AX, "+$2->asmName+"\n");
 			assemblyCodes+=("\tNOT AX\n");
 			assemblyCodes+=("\tMOV "+temp+", AX\n");
 
 			$$->setCode(assemblyCodes);
 			$$->setName(temp);
+			$$->asmName=temp;
 		}
 		 | factor 
 		{
@@ -1413,18 +1405,11 @@ unary_expression : ADDOP unary_expression
 	
 factor : variable
 		{
-			$$=new SymbolInfo($1->getName(),$1->getType());
-			
-			//copy all properties
-			$$->sz=$1->sz;
-			$$->setVariableType($1->getVariableType());
-			$$->setReturnType($1->getReturnType());
-			$$->setCode($$->getCode());
-			$$->setIdentity($1->getIdentity()) ;
+			$$=$1;
 
 			//-------------------------------------------------------------------
 			//for code generation purpose we concatenate the current id with the variable name
-			$$->setName($$->getName()+stoi(table.getCurrentID())); 
+			$$->asmName=$$->getName()+stoi(table.getCurrentID());
 			//-------------------------------------------------------------------
 
 			//#semantic error check
@@ -1489,16 +1474,17 @@ factor : variable
 		}
 	| LPAREN expression RPAREN
 		{
-			$$=$2;
+			$$=$2;$$->asmName=$$->getName();
 		}
 	| CONST_INT
 		{
 			$$=$1;
+			$$->asmName=$$->getName();
 			$$->setVariableType("int");
 		} 
 	| CONST_FLOAT
 		{
-			$$=$1;
+			$$=$1;$$->asmName=$$->getName();
 			$$->setVariableType("float");
 		}
 	| variable INCOP

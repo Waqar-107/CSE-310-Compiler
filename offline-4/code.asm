@@ -6,8 +6,6 @@
 	i2 DW ?
 	T1 DW ?
 	T2 DW ?
-	T3 DW ?
-	T4 DW ?
 .CODE
 PRINT_ID PROC
 
@@ -126,20 +124,6 @@ L3:
 	CALL PRINT_ID
 
 	MOV AX, i2
-	CALL PRINT_ID
-
-	MOV AX, 5
-	MOV a2, AX
-	MOV AX, a2
-	MOV T3, AX
-	DEC AX
-	MOV a2, AX
-	MOV AX, a2
-	MOV T4, AX
-	DEC AX
-	MOV a2, AX
-
-	MOV AX, a2
 	CALL PRINT_ID
 
 	MOV AX, 4CH

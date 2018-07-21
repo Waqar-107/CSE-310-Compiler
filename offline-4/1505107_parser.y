@@ -103,12 +103,14 @@ string newTemp()
 void optimizeCode()
 {
     string str;
-    map<string,string> reg_and_var;
+    string sx="null",sy="null";
+    int cnt=0;
 
     while(getline(cin,str))
     {
         //check for MOV x, y
         int i,j,k;
+        cnt++;
 
         if(str.find("MOV")!=string::npos)
         {
@@ -146,17 +148,41 @@ void optimizeCode()
             if(x=="AH" && (y=="1" || y=="2"))
                 fprintf(optimized_asmCode,"%s\n",str.c_str());
 
-            else{
-                 if(reg_and_var[x]!=y && x!=reg_and_var[y])
+            else
+            {
+            	//cout<<str<<endl;
+                if(sx!="null" && sy!="null")
                 {
-                    reg_and_var[x]=y;
-                    fprintf(optimized_asmCode,"%s\n",str.c_str());
+                	//skip this line
+                	if(x==sy && y==sx){
+                		sx="null";sy="null";
+                		//cout<<"mov "<<sx<<", "<<sy<<endl;
+                		//cout<<"mov "<<x<<" ,"<<y<<endl;
+                	}
+
+                	else{
+                		 sx=x, sy=y;
+                		 fprintf(optimized_asmCode,"%s\n",str.c_str());
+                	}
+
+                }
+
+                else{
+                	sx=x, sy=y;
+                	fprintf(optimized_asmCode,"%s\n",str.c_str());
                 }
             }
         }
 
         else
-            fprintf(optimized_asmCode,"%s\n",str.c_str());
+        {
+        	if(str.length())
+        		sx="null", sy="null";
+
+         	fprintf(optimized_asmCode,"%s\n",str.c_str());
+        }
+
+        //cout<<cnt<<" "<<str<<"  | "<<sx<<" "<<sy<<endl;
     }
 }
 
@@ -258,8 +284,6 @@ start : program {
 
 		 		fprintf(asmCode,"%s",init.c_str());
 		 		fprintf(asmCode,"%s",$$->getCode().c_str());
-
-		 		optimizeCode();
 		 	}
 		}
 	;
@@ -1698,6 +1722,10 @@ int main(int argc,char *argv[])
 	
 	fclose(error);
 	fclose(asmCode);
+
+	freopen("code.asm","r",stdin);
+	optimizeCode();
+	
 	fclose(optimized_asmCode);
 	
 	return 0;

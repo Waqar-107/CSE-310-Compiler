@@ -1,2 +1,0 @@
-total lines read: 19
-total errors encountered: 0
